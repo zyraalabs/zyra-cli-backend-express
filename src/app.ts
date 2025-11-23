@@ -24,8 +24,6 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-app.options("*", cors());
-
 app.get("/", (req, res) => {
   logger.info("health-check", "Health check endpoint hit");
   res.send("Zyra CLI Backend - Running");
