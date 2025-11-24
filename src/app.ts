@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { logger } from "./utils/logger";
+import cliLoginRoutes from "./routes/cliLogin.routes";
+import approveRoutes from "./routes/approve.routes";
 
 const app = express();
 
@@ -28,5 +30,8 @@ app.get("/", (req, res) => {
   logger.info("health-check", "Health check endpoint hit");
   res.send("Zyra CLI Backend - Running");
 });
+
+app.use("/api/cli/login", cliLoginRoutes);
+app.use("/api/cli/login/approve", approveRoutes);
 
 export { app };
