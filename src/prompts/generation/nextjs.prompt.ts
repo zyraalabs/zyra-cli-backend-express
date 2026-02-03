@@ -19,18 +19,33 @@ ${wasScaffolded ? "The project has been scaffolded with create-next-app@latest."
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "16.0.1",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-label": "^2.1.1",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@tailwindcss/postcss": "^4.1.1",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8",
-    "tailwindcss": "^4.1.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "tw-animate-css": "^1.4.0",
     "typescript": "^5"
   }
 }
@@ -107,15 +122,58 @@ export function cn(...inputs: ClassValue[]) {
 }
 \`\`\`
 
-And add clsx and tailwind-merge to dependencies in package.json:
+## Shadcn/ui Dependencies
+
+**CRITICAL RULE:** ALL dependencies must be in package.json - the CLI runs "pnpm install" automatically.
+
+**Base dependencies** (ALWAYS include in every Next.js project):
 \`\`\`json
 "dependencies": {
+  "@radix-ui/react-avatar": "^1.1.1",
+  "@radix-ui/react-checkbox": "^1.1.2",
+  "@radix-ui/react-dialog": "^1.1.2",
+  "@radix-ui/react-dropdown-menu": "^2.1.2",
+  "@radix-ui/react-label": "^2.1.1",
+  "@radix-ui/react-select": "^2.1.2",
+  "@radix-ui/react-separator": "^1.1.0",
+  "@radix-ui/react-slot": "^1.1.1",
+  "@radix-ui/react-switch": "^1.1.1",
+  "@radix-ui/react-tabs": "^1.1.1",
+  "class-variance-authority": "^0.7.1",
   "clsx": "^2.1.1",
-  "tailwind-merge": "^2.5.5"
+  "lucide-react": "^0.563.0",
+  "next": "16.1.6",
+  "react": "19.2.3",
+  "react-dom": "19.2.3",
+  "tailwind-merge": "^3.4.0"
+},
+"devDependencies": {
+  "@tailwindcss/postcss": "^4",
+  "@types/node": "^20",
+  "@types/react": "^19",
+  "@types/react-dom": "^19",
+  "eslint": "^9",
+  "eslint-config-next": "16.1.6",
+  "tailwindcss": "^4",
+  "tw-animate-css": "^1.4.0",
+  "typescript": "^5"
 }
 \`\`\`
 
-When using shadcn components, generate them in src/components/ui/ directory with the exact code from shadcn/ui documentation.
+**Additional dependencies** (add when needed):
+- MongoDB: \`"mongoose": "^8.8.4"\`
+- Form validation: \`"zod": "^3.23.8"\`, \`"react-hook-form": "^7.53.2"\`
+- Date handling: \`"date-fns": "^4.1.0"\`
+- Authentication: \`"next-auth": "^5.0.0-beta.25"\`
+
+**CRITICAL RULES - NO EXCEPTIONS:**
+1. ALWAYS include ALL @radix-ui packages listed above in package.json
+2. The base dependencies include the most common radix-ui packages - NEVER remove them
+3. If you need additional @radix-ui packages (like react-accordion, react-popover), add them too
+4. Generate shadcn components in src/components/ui/ with exact code from shadcn docs
+5. NEVER EVER mention "pnpm add", "npm install", or "yarn add" in <explanation>
+6. ALL dependencies MUST be in package.json - the CLI runs "pnpm install" automatically
+7. Missing dependencies will cause build failures - this is unacceptable!
 
 ## Tailwind CSS v4 Setup
 
@@ -128,57 +186,25 @@ export default {
 };
 \`\`\`
 
-**src/app/globals.css** (with CSS variables for shadcn):
+**src/app/globals.css** - CRITICAL: Use standard Tailwind classes, NOT CSS variables:
 \`\`\`css
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: 0 0% 100%;
-  --color-foreground: 0 0% 3.9%;
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 0 0% 3.9%;
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 0 0% 3.9%;
-  --color-primary: 0 0% 9%;
-  --color-primary-foreground: 0 0% 98%;
-  --color-secondary: 0 0% 96.1%;
-  --color-secondary-foreground: 0 0% 9%;
-  --color-muted: 0 0% 96.1%;
-  --color-muted-foreground: 0 0% 45.1%;
-  --color-accent: 0 0% 96.1%;
-  --color-accent-foreground: 0 0% 9%;
-  --color-destructive: 0 84.2% 60.2%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 0 0% 89.8%;
-  --color-input: 0 0% 89.8%;
-  --color-ring: 0 0% 3.9%;
-  --radius: 0.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  @theme inline {
-    --color-background: 0 0% 3.9%;
-    --color-foreground: 0 0% 98%;
-    --color-card: 0 0% 3.9%;
-    --color-card-foreground: 0 0% 98%;
-    --color-popover: 0 0% 3.9%;
-    --color-popover-foreground: 0 0% 98%;
-    --color-primary: 0 0% 98%;
-    --color-primary-foreground: 0 0% 9%;
-    --color-secondary: 0 0% 14.9%;
-    --color-secondary-foreground: 0 0% 98%;
-    --color-muted: 0 0% 14.9%;
-    --color-muted-foreground: 0 0% 63.9%;
-    --color-accent: 0 0% 14.9%;
-    --color-accent-foreground: 0 0% 98%;
-    --color-destructive: 0 62.8% 30.6%;
-    --color-destructive-foreground: 0 0% 98%;
-    --color-border: 0 0% 14.9%;
-    --color-input: 0 0% 14.9%;
-    --color-ring: 0 0% 83.1%;
-  }
+body {
+  font-family: var(--font-sans);
 }
 \`\`\`
+
+**IMPORTANT:** For shadcn components, modify them to use standard Tailwind classes instead of CSS variables:
+- Replace bg-card with bg-white dark:bg-gray-900
+- Replace text-card-foreground with text-gray-900 dark:text-gray-100
+- Replace bg-muted with bg-gray-100 dark:bg-gray-800
+- Replace text-muted-foreground with text-gray-500 dark:text-gray-400
+- Replace bg-primary with bg-gray-900 dark:bg-gray-100
+- Replace text-primary-foreground with text-white dark:text-gray-900
+- Replace border with border-gray-200 dark:border-gray-800
+
+This ensures colors work properly without relying on CSS variables that may not work with Tailwind v4.
 
 ## Typography & Google Fonts
 
@@ -299,12 +325,12 @@ Please create a .env file based on .env.example and fill in the required values.
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
   "exclude": ["node_modules"]
 }
 \`\`\`
@@ -347,7 +373,8 @@ export default nextConfig;
 
 ${
   wasScaffolded
-    ? `**Generate**:
+    ? `**ALWAYS Generate** (even if scaffolded):
+- **package.json** - CRITICAL: MUST include ALL dependencies your code uses
 - src/app/layout.tsx (if customizing)
 - src/app/page.tsx
 - src/app/globals.css
@@ -359,18 +386,23 @@ ${
 - .env.example
 
 **DO NOT generate** (already exist from scaffold):
-- package.json
 - tsconfig.json
 - next.config.ts
 - postcss.config.mjs
-- biome.json
-- .gitignore`
+- .gitignore
+
+**CRITICAL for package.json:**
+When generating package.json for a scaffolded project:
+1. Start with the base dependencies shown above
+2. Add EVERY @radix-ui package your components need
+3. Add lucide-react if using icons
+4. Add any other libraries (mongoose, zod, etc.)
+5. The CLI will run "pnpm install" automatically after file generation`
     : `**Generate ALL files**:
 - package.json
 - tsconfig.json
 - next.config.ts
 - postcss.config.mjs
-- biome.json
 - components.json
 - .gitignore
 - src/app/layout.tsx
@@ -400,15 +432,68 @@ Rules:
 
 ## UI Design Standards
 
-Create beautiful, professional-grade UI with:
-- Clean, modern design using shadcn/ui components
-- Proper spacing and typography hierarchy
-- Responsive design (mobile-first)
-- Smooth animations and transitions
-- Proper color contrast and accessibility
-- Loading states and error handling
-- Professional layouts with proper white space
-- Consistent component styling
+**CRITICAL:** You are building a PRODUCTION-READY, PROFESSIONAL application. The UI must be:
+
+**Layout & Spacing:**
+- Maximum width containers: container mx-auto px-4 py-8 max-w-7xl
+- Generous padding: Use p-6, p-8 for cards, never less than p-4
+- Consistent gaps: gap-4, gap-6, gap-8 between elements
+- Proper section spacing: mb-8, mb-12 between major sections
+- Never cramped layouts - give elements room to breathe
+
+**Typography:**
+- Clear hierarchy: h1 (text-4xl font-bold), h2 (text-3xl font-semibold), h3 (text-2xl)
+- Readable body text: text-base or text-lg, never smaller than text-sm for main content
+- Use text-muted-foreground for secondary text
+- Line height: leading-relaxed for paragraphs
+
+**Colors & Contrast:**
+- Use semantic colors: bg-primary, bg-secondary, bg-accent
+- Color accents for visual interest: blue-500, purple-500, green-500 for stats/icons
+- Proper contrast ratios for accessibility
+- Consistent color scheme throughout
+- Use gradients sparingly: bg-gradient-to-br from-blue-50 to-indigo-100
+
+**Cards & Components:**
+- Cards always have: rounded-lg, border, shadow-sm, p-6 minimum
+- Interactive elements have hover states: hover:bg-accent, hover:shadow-md
+- Buttons are properly sized: px-4 py-2 minimum, px-6 py-3 for primary actions
+- Forms have proper spacing between fields: space-y-4
+- Icons are consistently sized: h-5 w-5 or h-6 w-6
+
+**Professional Polish:**
+- Add visual hierarchy with different card elevations
+- Use icons from lucide-react for visual appeal
+- Group related content in cards or sections
+- Balance information density - not too crowded, not too sparse
+- Loading states, empty states, error states for ALL data
+- Smooth transitions: transition-all duration-200
+
+**Mobile Responsiveness:**
+- Grid layouts: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- Stack on mobile, side-by-side on desktop
+- Touch-friendly targets: min-h-[44px] for buttons
+- Readable on small screens: proper font sizes
+
+**Examples of GOOD vs BAD:**
+
+❌ BAD - Cramped, small, poor visual hierarchy:
+- Tiny padding (p-2)
+- Small icons (h-4 w-4)
+- No icon backgrounds
+- Small text (text-sm)
+- No spacing between elements
+
+✅ GOOD - Spacious, clear, professional:
+- Generous padding (p-6)
+- Properly sized icons (h-6 w-6)
+- Icon backgrounds with colors (p-3 bg-blue-100 rounded-lg)
+- Large, bold numbers (text-2xl font-bold)
+- Clear labels (text-sm text-muted-foreground)
+- Proper gaps (gap-4)
+- Hover effects (hover:shadow-md transition-shadow)
+
+**Remember:** Users judge quality by appearance. Make it look PROFESSIONAL and POLISHED!
 
 ## Code Quality Standards
 
