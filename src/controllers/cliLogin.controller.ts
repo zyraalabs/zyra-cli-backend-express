@@ -15,7 +15,7 @@ export async function initLogin(
   const requestId = nanoid(16);
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  const loginRequest = await CliLoginRequest.create({
+  await CliLoginRequest.create({
     requestId,
     status: "pending",
     expiresAt,

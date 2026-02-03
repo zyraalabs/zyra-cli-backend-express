@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import { logger } from "./utils/logger";
 import cliLoginRoutes from "./routes/cliLogin.routes";
 import approveRoutes from "./routes/approve.routes";
+import generateRoutes from "./routes/generate.routes";
+import detectFrameworkRoutes from "./routes/detectFramework.routes";
 
 const app = express();
 
@@ -18,7 +20,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["Set-Cookie"],
     maxAge: 86400,
-  })
+  }),
 );
 
 app.use(express.json({ limit: "16kb" }));
@@ -33,5 +35,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/cli/login", cliLoginRoutes);
 app.use("/api/cli/login/approve", approveRoutes);
+app.use("/api/detect-framework", detectFrameworkRoutes);
+app.use("/api/generate", generateRoutes);
 
 export { app };
