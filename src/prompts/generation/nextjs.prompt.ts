@@ -7,6 +7,8 @@ ${wasScaffolded ? "The project has been scaffolded with create-next-app@latest."
 
 **EXACT versions to use** (Next.js 16 + React 19 + Tailwind v4):
 
+- Always have a page.tsx file in src/app/ as the main entry point.
+
 \`\`\`json
 {
   "name": "generated-app",
