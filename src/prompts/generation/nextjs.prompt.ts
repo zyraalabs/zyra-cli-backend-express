@@ -188,14 +188,26 @@ export default {
 };
 \`\`\`
 
-**src/app/globals.css** - CRITICAL: Use standard Tailwind classes, NOT CSS variables:
+**src/app/globals.css** - COPY THIS EXACTLY, nothing more:
 \`\`\`css
 @import "tailwindcss";
+@import "tw-animate-css";
 
-body {
-  font-family: var(--font-sans);
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
 }
 \`\`\`
+
+**CRITICAL globals.css rules — NO EXCEPTIONS:**
+1. NEVER use \`@apply\` — it does not work in Tailwind v4 with custom class names
+2. NEVER define custom utility classes like \`fade-in\`, \`slide-up\`, etc.
+3. NEVER add \`@keyframes\` or custom animations in globals.css — use Tailwind classes directly in JSX
+4. NEVER add CSS variables for colors — use Tailwind color classes directly (e.g. \`bg-gray-900\` not \`var(--color-bg)\`)
+5. The ONLY content in globals.css should be the imports above and optionally \`@layer base\` for font/reset rules
+
+**For animations:** use Tailwind classes directly in JSX: \`animate-fade-in\`, \`transition-all\`, \`duration-200\`, etc. from tw-animate-css.
 
 **IMPORTANT:** For shadcn components, modify them to use standard Tailwind classes instead of CSS variables:
 - Replace bg-card with bg-white dark:bg-gray-900
@@ -205,8 +217,6 @@ body {
 - Replace bg-primary with bg-gray-900 dark:bg-gray-100
 - Replace text-primary-foreground with text-white dark:text-gray-900
 - Replace border with border-gray-200 dark:border-gray-800
-
-This ensures colors work properly without relying on CSS variables that may not work with Tailwind v4.
 
 ## Typography & Google Fonts
 
@@ -312,7 +322,7 @@ Please create a .env file based on .env.example and fill in the required values.
 
 ## Configuration Files
 
-**tsconfig.json**:
+**tsconfig.json** — use EXACTLY this (moduleResolution MUST be "bundler", paths MUST include "@/*"):
 \`\`\`json
 {
   "compilerOptions": {
@@ -377,6 +387,7 @@ ${
   wasScaffolded
     ? `**ALWAYS Generate** (even if scaffolded):
 - **package.json** - CRITICAL: MUST include ALL dependencies your code uses
+- **tsconfig.json** - CRITICAL: scaffold default lacks @/* paths alias, always regenerate it
 - src/app/layout.tsx (if customizing)
 - src/app/page.tsx
 - src/app/globals.css
@@ -388,7 +399,6 @@ ${
 - .env.example
 
 **DO NOT generate** (already exist from scaffold):
-- tsconfig.json
 - next.config.ts
 - postcss.config.mjs
 - .gitignore
@@ -518,5 +528,9 @@ Rules:
 - NO external assets that won't exist
 - Ensure all imports are correct
 - All file paths use forward slashes
-- Generate complete, working code`;
+- Generate complete, working code
+- NEVER use @apply in globals.css — causes CssSyntaxError in Tailwind v4
+- NEVER define custom CSS utility classes — use Tailwind classes inline in JSX only
+- ALWAYS guard against undefined/null before calling string methods: use optional chaining (e.g. \`todo.priority?.charAt(0)\` or provide a default \`todo.priority ?? "medium"\`)
+- ALWAYS validate data loaded from localStorage — fields may be missing from older saved data, use defaults when parsing`;
 };
