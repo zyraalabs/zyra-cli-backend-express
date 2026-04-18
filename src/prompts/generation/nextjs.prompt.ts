@@ -114,7 +114,7 @@ pnpm dlx shadcn@latest init
 }
 \`\`\`
 
-**Always include src/lib/utils.ts** for the cn helper:
+**CRITICAL — ALWAYS generate src/lib/utils.ts** (this file MUST exist or every shadcn/ui component will fail to build with "Module not found: Can't resolve '@/lib/utils'"):
 \`\`\`typescript
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -388,8 +388,9 @@ ${
     ? `**ALWAYS Generate** (even if scaffolded):
 - **package.json** - CRITICAL: MUST include ALL dependencies your code uses
 - **tsconfig.json** - CRITICAL: scaffold default lacks @/* paths alias, always regenerate it
+- **src/lib/utils.ts** - CRITICAL: ALWAYS generate this, omitting it causes "Module not found: Can't resolve '@/lib/utils'" build failure
 - src/app/layout.tsx (if customizing)
-- src/app/page.tsx
+- **src/app/page.tsx** - CRITICAL: ALWAYS generate this, omitting it causes "404 page not found" — the app has no home page without it
 - src/app/globals.css
 - All src/components/ (including ui/)
 - All src/app/api/ routes
@@ -418,8 +419,9 @@ When generating package.json for a scaffolded project:
 - components.json
 - .gitignore
 - src/app/layout.tsx
-- src/app/page.tsx
+- **src/app/page.tsx** - MANDATORY: the app has no home page without this file, ALWAYS generate it
 - src/app/globals.css
+- **src/lib/utils.ts** - MANDATORY, ALWAYS generate this file
 - All src/components/ (including ui/)
 - All src/app/api/ routes
 - All src/lib/ utilities
@@ -554,5 +556,6 @@ Rules:
 - NEVER use @apply in globals.css — causes CssSyntaxError in Tailwind v4
 - NEVER define custom CSS utility classes — use Tailwind classes inline in JSX only
 - ALWAYS guard against undefined/null before calling string methods: use optional chaining (e.g. \`todo.priority?.charAt(0)\` or provide a default \`todo.priority ?? "medium"\`)
-- ALWAYS validate data loaded from localStorage — fields may be missing from older saved data, use defaults when parsing`;
+- ALWAYS validate data loaded from localStorage — fields may be missing from older saved data, use defaults when parsing
+- ALWAYS generate src/lib/utils.ts — NEVER skip this file. Missing it causes "Module not found: Can't resolve '@/lib/utils'" in every shadcn/ui component and the app will not build`;
 };
