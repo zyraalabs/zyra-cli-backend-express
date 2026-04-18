@@ -507,6 +507,28 @@ Rules:
 
 **Remember:** Users judge quality by appearance. Make it look PROFESSIONAL and POLISHED!
 
+**Form & Input UX:**
+- Use \`<textarea>\` for any input where users may type or paste more than one line — never use \`<input type="text">\` for prompts, descriptions, messages, or notes
+- Textareas must never overflow their container: always add \`resize-none overflow-hidden\` and auto-grow on content change:
+  \`\`\`tsx
+  <textarea
+    rows={1}
+    className="w-full resize-none overflow-hidden bg-transparent outline-none"
+    onInput={(e) => {
+      const el = e.currentTarget;
+      el.style.height = "auto";
+      el.style.height = \`\${el.scrollHeight}px\`;
+    }}
+  />
+  \`\`\`
+- For chat / prompt-style inputs: auto-grow textarea capped at a max height with overflow-y-auto beyond it:
+  \`\`\`tsx
+  className="w-full resize-none overflow-y-auto max-h-40 bg-transparent outline-none"
+  \`\`\`
+- Pasted text must never break the layout — auto-grow handles this automatically
+- Always set a meaningful \`placeholder\` on every input and textarea
+- Submit on Enter (not Shift+Enter) only for single-line search/command inputs; for multi-line inputs always require an explicit submit button
+
 ## Code Quality Standards
 
 - Clean TypeScript with proper type annotations
