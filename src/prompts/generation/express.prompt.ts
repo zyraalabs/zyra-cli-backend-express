@@ -36,7 +36,7 @@ project/
 
 \`\`\`json
 {
-  "name": "generated-api",
+  "name": "<derive a short, memorable kebab-case name from the user's prompt>",
   "version": "1.0.0",
   "description": "Generated Express API",
   "main": "dist/index.js",

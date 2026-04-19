@@ -11,7 +11,7 @@ ${wasScaffolded ? "The project has been scaffolded with create-next-app@latest."
 
 \`\`\`json
 {
-  "name": "generated-app",
+  "name": "<derive a short, memorable kebab-case name from the user's prompt — e.g. 'hotel-booking-app', 'task-manager-pro', 'shop-dashboard'>",
   "version": "0.1.0",
   "private": true,
   "scripts": {

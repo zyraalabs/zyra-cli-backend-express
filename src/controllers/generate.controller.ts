@@ -1,14 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 import { getAnthropicClient } from "../utils/anthropic.util";
-import {
-  GENERATION_MODEL,
-  GENERATION_MAX_TOKENS,
-} from "../config/generation.constants";
+import { GENERATION_MODEL, GENERATION_MAX_TOKENS } from "../config/generation.constants";
 import { getNextJsPrompt } from "../prompts/generation/nextjs.prompt";
 import { getViteReactPrompt } from "../prompts/generation/vite-react.prompt";
 import { getExpressPrompt } from "../prompts/generation/express.prompt";
 import { validateGenerationRequest } from "../utils/generation.util";
+import UserModel from "../models/user.model";
+import { Generation } from "../models/generation.model";
+import { parseProjectName } from "../utils/parseProjectName";
 
 const getSystemPrompt = (framework: string, wasScaffolded: boolean): string => {
   const prompts: Record<string, (scaffolded: boolean) => string> = {
@@ -16,24 +16,17 @@ const getSystemPrompt = (framework: string, wasScaffolded: boolean): string => {
     "vite-react": getViteReactPrompt,
     express: getExpressPrompt,
   };
-  const promptFn = prompts[framework] || prompts.nextjs;
-  return promptFn(wasScaffolded);
+  return (prompts[framework] ?? prompts.nextjs)(wasScaffolded);
 };
 
-export async function generate(
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-) {
+export async function generate(req: Request, res: Response, _next: NextFunction) {
   const { prompt, framework = "nextjs", wasScaffolded = false } = req.body;
 
   const validation = validateGenerationRequest(prompt, res);
   if (!validation.isValid) return validation.error;
 
-  logger.info(
-    "generate",
-    `Generation requested by user: ${req.user?.id || "unknown"} | Framework: ${framework} | Scaffolded: ${wasScaffolded}`,
-  );
+  const userId = req.user?.userId;
+  logger.info("generate", `User: ${userId} | Framework: ${framework}`);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -41,6 +34,7 @@ export async function generate(
   res.setHeader("X-Accel-Buffering", "no");
 
   const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const startedAt = Date.now();
 
   try {
     const client = getAnthropicClient();
@@ -53,32 +47,43 @@ export async function generate(
       messages: [{ role: "user", content: prompt }],
     });
 
-    stream.on("text", (text) => send({ type: "text", text }));
+    let fullOutput = "";
+    stream.on("text", (text) => { fullOutput += text; send({ type: "text", text }); });
 
     const final = await stream.finalMessage();
+    const durationMs = Date.now() - startedAt;
+    const { input_tokens, output_tokens } = final.usage;
 
-    send({
-      type: "done",
-      usage: {
-        inputTokens: final.usage.input_tokens,
-        outputTokens: final.usage.output_tokens,
-      },
-    });
+    send({ type: "done", usage: { inputTokens: input_tokens, outputTokens: output_tokens } });
 
-    logger.info(
-      "generate",
-      `Completed. Tokens: ${final.usage.input_tokens + final.usage.output_tokens}`,
-    );
+    if (userId) {
+      const derivedName = parseProjectName(fullOutput);
+      await Promise.all([
+        UserModel.findByIdAndUpdate(userId, {
+          $inc: { "usage.totalBuilds": 1, "usage.remainingTrial": -1 },
+        }),
+        Generation.create({
+          userId,
+          prompt,
+          framework,
+          filesGenerated: 0,
+          inputTokens: input_tokens,
+          outputTokens: output_tokens,
+          durationMs,
+          projectName: derivedName,
+        }),
+      ]);
+    }
+
+    logger.info("generate", `Done. Tokens: ${input_tokens + output_tokens} | Duration: ${durationMs}ms`);
   } catch (error) {
     const err = error as { status?: number };
     const message =
-      err.status === 429
-        ? "Rate limit exceeded. Please try again shortly."
-        : err.status === 401
-          ? "Server configuration error"
-          : "Generation failed. Please try again.";
+      err.status === 429 ? "Rate limit exceeded. Please try again shortly." :
+      err.status === 401 ? "Server configuration error" :
+      "Generation failed. Please try again.";
 
-    logger.error("generate", "Anthropic stream failed", error);
+    logger.error("generate", "Stream failed", error);
     send({ type: "error", message });
   }
 
