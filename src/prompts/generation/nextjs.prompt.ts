@@ -74,6 +74,8 @@ project/
 │   └── types/
 │       └── index.ts          (TypeScript types)
 ├── public/
+├── .zyraa/
+│   └── index.md              (project file index for Zyraa CLI)
 ├── package.json
 ├── tsconfig.json
 ├── next.config.ts
@@ -398,6 +400,7 @@ ${
 - All src/types/
 - components.json
 - .env.example
+- **.zyraa/index.md** - MANDATORY: one-line description per generated file (see format below)
 
 **DO NOT generate** (already exist from scaffold):
 - next.config.ts
@@ -426,8 +429,30 @@ When generating package.json for a scaffolded project:
 - All src/app/api/ routes
 - All src/lib/ utilities
 - All src/types/
-- .env.example`
+- .env.example
+- **.zyraa/index.md** - MANDATORY: one-line description per generated file (see format below)`
 }
+
+## .zyraa/index.md Format
+
+ALWAYS generate this file. It is used by the Zyraa CLI to enable smart re-prompting.
+
+Format — one line per file, path then dash then one-sentence description:
+\`\`\`
+# Project Index
+
+- package.json — Project dependencies and scripts
+- src/app/layout.tsx — Root layout with Inter font and metadata
+- src/app/page.tsx — Landing page with hero section and CTA
+- src/app/globals.css — Global CSS with Tailwind v4 imports
+- src/lib/utils.ts — cn utility helper for class merging
+- src/components/ui/button.tsx — Button component with size and variant props
+\`\`\`
+
+Rules:
+- Include EVERY file you generate (except .env.example and biome.json)
+- Keep descriptions short (5-10 words max)
+- Use relative paths from project root
 
 ## Output Format
 

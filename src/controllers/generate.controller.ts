@@ -54,24 +54,26 @@ export async function generate(req: Request, res: Response, _next: NextFunction)
     const durationMs = Date.now() - startedAt;
     const { input_tokens, output_tokens } = final.usage;
 
-    send({ type: "done", usage: { inputTokens: input_tokens, outputTokens: output_tokens } });
+    const derivedName = userId ? parseProjectName(fullOutput) : "";
+    const gen = userId ? new Generation({
+      userId,
+      prompt,
+      framework,
+      filesGenerated: 0,
+      inputTokens: input_tokens,
+      outputTokens: output_tokens,
+      durationMs,
+      projectName: derivedName,
+    }) : null;
 
-    if (userId) {
-      const derivedName = parseProjectName(fullOutput);
+    send({ type: "done", usage: { inputTokens: input_tokens, outputTokens: output_tokens }, generationId: gen?._id?.toString() ?? "" });
+
+    if (userId && gen) {
       await Promise.all([
         UserModel.findByIdAndUpdate(userId, {
           $inc: { "usage.totalBuilds": 1, "usage.remainingTrial": -1 },
         }),
-        Generation.create({
-          userId,
-          prompt,
-          framework,
-          filesGenerated: 0,
-          inputTokens: input_tokens,
-          outputTokens: output_tokens,
-          durationMs,
-          projectName: derivedName,
-        }),
+        gen.save(),
       ]);
     }
 
