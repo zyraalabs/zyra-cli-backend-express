@@ -26,7 +26,6 @@ export async function repromptSelect(req: Request, res: Response) {
       ],
     });
 
-    console.log("Anthropic response:", message);
     const content = message.content[0];
     if (content.type !== "text") {
       return ErrorResponse(res, "Invalid response from model", 500);
