@@ -8,7 +8,7 @@ import { logger } from "../utils/logger";
 export async function initLogin(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   await connectToDatabase();
 
@@ -21,7 +21,7 @@ export async function initLogin(
     expiresAt,
   });
 
-  const appUrl = process.env.MY_APP_URL || "http://localhost:3001";
+  const appUrl = process.env.MY_APP_URL || "http://localhost:3002";
   const url = `${appUrl}/cli-auth?req=${requestId}`;
 
   logger.info("cli-login", `Login request initialized: ${requestId}`);
@@ -36,7 +36,7 @@ export async function initLogin(
 export async function checkStatus(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   await connectToDatabase();
 

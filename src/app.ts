@@ -13,8 +13,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      process.env.MY_APP_URL || "http://localhost:3001",
-      process.env.AUTH_SERVICE_URL || "http://localhost:3000",
+      process.env.MY_APP_URL || "http://localhost:3002",
+      process.env.AUTH_SERVICE_URL || "http://localhost:3001",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
