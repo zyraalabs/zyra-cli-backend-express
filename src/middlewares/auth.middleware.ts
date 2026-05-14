@@ -19,7 +19,11 @@ declare global {
   }
 }
 
-export function verifyWebAppToken(req: Request, res: Response, next: NextFunction) {
+export function verifyWebAppToken(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) return ErrorResponse(res, "Not authenticated", 401);
@@ -30,8 +34,13 @@ export function verifyWebAppToken(req: Request, res: Response, next: NextFunctio
     try {
       jwt.verify(token, secret);
     } catch (err: unknown) {
-      const isExpired = err instanceof Error && err.name === "TokenExpiredError";
-      return ErrorResponse(res, isExpired ? "Session expired" : "Invalid token", 401);
+      const isExpired =
+        err instanceof Error && err.name === "TokenExpiredError";
+      return ErrorResponse(
+        res,
+        isExpired ? "Session expired" : "Invalid token",
+        401,
+      );
     }
 
     next();
@@ -81,7 +90,11 @@ export async function verifyJWT(
       return ErrorResponse(res, "User not found. Run: zyraa login", 401);
 
     if (user.usage.remainingTrial <= 0)
-      return ErrorResponse(res, "Build limit reached. Upgrade your plan at zyraa.dev", 403);
+      return ErrorResponse(
+        res,
+        "Build limit reached. Upgrade your plan at zyraa.live",
+        403,
+      );
 
     req.user = decoded;
     next();
