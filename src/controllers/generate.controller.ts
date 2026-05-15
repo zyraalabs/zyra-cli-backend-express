@@ -54,12 +54,13 @@ export async function generate(req: Request, res: Response, _next: NextFunction)
     const durationMs = Date.now() - startedAt;
     const { input_tokens, output_tokens } = final.usage;
 
+    const filesGenerated = (fullOutput.match(/<file\s+path="[^"]+"/g) ?? []).length;
     const derivedName = userId ? parseProjectName(fullOutput) : "";
     const gen = userId ? new Generation({
       userId,
       prompt,
       framework,
-      filesGenerated: 0,
+      filesGenerated,
       inputTokens: input_tokens,
       outputTokens: output_tokens,
       durationMs,
