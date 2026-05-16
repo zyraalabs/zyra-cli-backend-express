@@ -6,7 +6,6 @@ import { getNextJsPrompt } from "../prompts/generation/nextjs.prompt";
 import { getViteReactPrompt } from "../prompts/generation/vite-react.prompt";
 import { getExpressPrompt } from "../prompts/generation/express.prompt";
 import { validateGenerationRequest } from "../utils/generation.util";
-import UserModel from "../models/user.model";
 import { Generation } from "../models/generation.model";
 import { parseProjectName } from "../utils/parseProjectName";
 
@@ -43,7 +42,7 @@ export async function generate(req: Request, res: Response, _next: NextFunction)
     const stream = client.messages.stream({
       model: GENERATION_MODEL,
       max_tokens: GENERATION_MAX_TOKENS,
-      system: systemPrompt,
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -69,14 +68,7 @@ export async function generate(req: Request, res: Response, _next: NextFunction)
 
     send({ type: "done", usage: { inputTokens: input_tokens, outputTokens: output_tokens }, generationId: gen?._id?.toString() ?? "" });
 
-    if (userId && gen) {
-      await Promise.all([
-        UserModel.findByIdAndUpdate(userId, {
-          $inc: { "usage.totalBuilds": 1, "usage.remainingTrial": -1 },
-        }),
-        gen.save(),
-      ]);
-    }
+    if (userId && gen) await gen.save();
 
     logger.info("generate", `Done. Tokens: ${input_tokens + output_tokens} | Duration: ${durationMs}ms`);
   } catch (error) {

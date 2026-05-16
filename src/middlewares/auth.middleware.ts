@@ -19,6 +19,34 @@ declare global {
   }
 }
 
+export async function checkAndDeductCredit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const userId = req.user?.userId;
+  if (!userId) return ErrorResponse(res, "Not authenticated", 401);
+
+  try {
+    const user = await UserModel.findOneAndUpdate(
+      { _id: userId, "usage.remainingTrial": { $gt: 0 } },
+      { $inc: { "usage.remainingTrial": -1, "usage.totalBuilds": 1 } },
+    );
+
+    if (!user)
+      return ErrorResponse(
+        res,
+        "Build limit reached. Upgrade your plan at zyraa.live",
+        403,
+      );
+
+    next();
+  } catch (error) {
+    logger.error("auth", "Credit deduction error", error);
+    return ErrorResponse(res, "Authentication failed", 500);
+  }
+}
+
 export function verifyWebAppToken(
   req: Request,
   res: Response,
@@ -88,13 +116,6 @@ export async function verifyJWT(
 
     if (!user)
       return ErrorResponse(res, "User not found. Run: zyraa login", 401);
-
-    if (user.usage.remainingTrial <= 0)
-      return ErrorResponse(
-        res,
-        "Build limit reached. Upgrade your plan at zyraa.live",
-        403,
-      );
 
     req.user = decoded;
     next();

@@ -4,7 +4,6 @@ import { getAnthropicClient } from "../utils/anthropic.util";
 import { GENERATION_MODEL, GENERATION_MAX_TOKENS } from "../config/generation.constants";
 import { getRepromptPrompt } from "../prompts/reprompt.prompt";
 import { Generation } from "../models/generation.model";
-import UserModel from "../models/user.model";
 
 export async function reprompt(req: Request, res: Response) {
   const { generationId, prompt, files, framework = "nextjs" } = req.body as {
@@ -48,11 +47,8 @@ export async function reprompt(req: Request, res: Response) {
     const stream = client.messages.stream({
       model: GENERATION_MODEL,
       max_tokens: GENERATION_MAX_TOKENS,
-      system: getRepromptPrompt(framework),
-      messages: [{
-        role: "user",
-        content: userMessage,
-      }],
+      system: [{ type: "text", text: getRepromptPrompt(framework), cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: userMessage }],
     });
 
     let fullOutput = "";
@@ -68,9 +64,6 @@ export async function reprompt(req: Request, res: Response) {
 
     if (userId) {
       await Promise.all([
-        UserModel.findByIdAndUpdate(userId, {
-          $inc: { "usage.totalBuilds": 1, "usage.remainingTrial": -1 },
-        }),
         generationId
           ? Generation.findByIdAndUpdate(generationId, {
               $push: {

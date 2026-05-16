@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { logger } from "./utils/logger";
+import { aj } from "./lib/arcjet";
 import cliLoginRoutes from "./routes/cliLogin.routes";
 import approveRoutes from "./routes/approve.routes";
 import generateRoutes from "./routes/generate.routes";
@@ -28,6 +29,16 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
+
+app.use(async (req, res, next) => {
+  const decision = await aj.protect(req);
+  if (decision.isDenied()) {
+    logger.warn("arcjet", `Blocked ${req.method} ${req.path} — ${decision.reason}`);
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  next();
+});
 
 app.get("/", (req, res) => {
   logger.info("health-check", "Health check endpoint hit");
