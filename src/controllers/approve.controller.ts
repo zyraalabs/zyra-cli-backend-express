@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { CliLoginRequest } from "../models/cliLoginRequest.model";
+import { CliLoginRequestModel as CliLoginRequest } from "@zyraalabs/zyraa-db";
 import { connectToDatabase } from "../db/db";
 import { SuccessResponse, ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
@@ -7,7 +7,7 @@ import { logger } from "../utils/logger";
 export async function approveLogin(
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   await connectToDatabase();
 

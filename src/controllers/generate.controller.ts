@@ -6,7 +6,7 @@ import { getNextJsPrompt } from "../prompts/generation/nextjs.prompt";
 import { getViteReactPrompt } from "../prompts/generation/vite-react.prompt";
 import { getExpressPrompt } from "../prompts/generation/express.prompt";
 import { validateGenerationRequest } from "../utils/generation.util";
-import { Generation } from "../models/generation.model";
+import { GenerationModel as Generation } from "@zyraalabs/zyraa-db";
 import { parseProjectName } from "../utils/parseProjectName";
 
 const getSystemPrompt = (framework: string, wasScaffolded: boolean): string => {

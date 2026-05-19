@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
-import UserModel from "../models/user.model";
+import { UserModel } from "@zyraalabs/zyraa-db";
 
 interface JWTPayload {
   userId: string;

@@ -3,7 +3,7 @@ import { logger } from "../utils/logger";
 import { getAnthropicClient } from "../utils/anthropic.util";
 import { GENERATION_MODEL, GENERATION_MAX_TOKENS } from "../config/generation.constants";
 import { getRepromptPrompt } from "../prompts/reprompt.prompt";
-import { Generation } from "../models/generation.model";
+import { GenerationModel as Generation } from "@zyraalabs/zyraa-db";
 
 export async function reprompt(req: Request, res: Response) {
   const { generationId, prompt, files, framework = "nextjs" } = req.body as {
