@@ -29,8 +29,8 @@ app.use(
 );
 
 app.use(requestId);
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json({ limit: "4mb" }));
+app.use(express.urlencoded({ extended: true, limit: "4mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
