@@ -12,6 +12,8 @@ import repromptRoutes from "./routes/reprompt.routes";
 
 const app = express();
 
+app.set("trust proxy", true);
+
 app.use(
   cors({
     origin: [
