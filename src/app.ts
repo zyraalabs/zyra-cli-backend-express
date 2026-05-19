@@ -37,8 +37,13 @@ app.use(cookieParser());
 app.use(async (req, res, next) => {
   const decision = await aj.protect(req);
   if (decision.isDenied()) {
-    logger.warn("arcjet", `Blocked ${req.method} ${req.path} — ${decision.reason}`);
-    res.status(403).json({ error: "Forbidden" });
+    const reason = decision.reason.isRateLimit()
+      ? "Rate limit exceeded - slow down and try again"
+      : decision.reason.isBot()
+        ? "Automated request blocked — use the official CLI"
+        : "Request blocked by security policy";
+    logger.warn("arcjet", `Blocked ${req.method} ${req.path} — ${reason}`);
+    res.status(429).json({ error: reason });
     return;
   }
   next();
