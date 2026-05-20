@@ -15,8 +15,8 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
       '@zyraalabs/zyraa-db':
-        specifier: ^1.0.0
-        version: 1.0.0(mongoose@9.0.0)
+        specifier: ^1.1.0
+        version: 1.1.0(mongoose@9.0.0)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -413,8 +413,8 @@ packages:
   '@types/whatwg-url@13.0.0':
     resolution: {integrity: sha512-N8WXpbE6Wgri7KUSvrmQcqrMllKZ9uxkYWMt+mCSGwNc0Hsw9VQTW7ApqI4XNrx6/SaM2QQJCzMPDEXE058s+Q==}
 
-  '@zyraalabs/zyraa-db@1.0.0':
-    resolution: {integrity: sha512-UGIq4Wt9B0Q/Wq/xv+siHuoesEmt57+nTKyKsxnL+yJC9GcCyP4h+qn/7CR98U3xIp8lmT/+5qgzGRxlgAxqZw==, tarball: https://npm.pkg.github.com/download/@zyraalabs/zyraa-db/1.0.0/8ed42fd43e44d9ccf2b0d82035f1e79a8632395f}
+  '@zyraalabs/zyraa-db@1.1.0':
+    resolution: {integrity: sha512-bphxjXqCPmN1kc4GqCcS5kwdSWQHIBC0R8OgBSrhjnOVchosRmmaiVi5aHR4rdUi7oF/7jkWidlgxELW06fGpg==, tarball: https://npm.pkg.github.com/download/@zyraalabs/zyraa-db/1.1.0/bbcaa2a67f09134988fba86cef678fb3336888fc}
     peerDependencies:
       mongoose: '>=8.0.0'
 
@@ -1147,7 +1147,7 @@ snapshots:
     dependencies:
       '@types/webidl-conversions': 7.0.3
 
-  '@zyraalabs/zyraa-db@1.0.0(mongoose@9.0.0)':
+  '@zyraalabs/zyraa-db@1.1.0(mongoose@9.0.0)':
     dependencies:
       mongoose: 9.0.0
 
