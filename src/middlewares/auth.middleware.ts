@@ -1,5 +1,5 @@
+import { jwtVerify } from "jose";
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import { UserModel } from "@zyraalabs/zyraa-db";
@@ -47,7 +47,7 @@ export async function checkAndDeductCredit(
   }
 }
 
-export function verifyWebAppToken(
+export async function verifyWebAppToken(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -56,14 +56,14 @@ export function verifyWebAppToken(
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) return ErrorResponse(res, "Not authenticated", 401);
 
-    const secret = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
-    if (!secret) return ErrorResponse(res, "Server configuration error", 500);
+    const jwtSecret = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
+    if (!jwtSecret) return ErrorResponse(res, "Server configuration error", 500);
 
     try {
-      jwt.verify(token, secret);
+      await jwtVerify(token, new TextEncoder().encode(jwtSecret));
     } catch (err: unknown) {
       const isExpired =
-        err instanceof Error && err.name === "TokenExpiredError";
+        err instanceof Error && err.message.includes("exp");
       return ErrorResponse(
         res,
         isExpired ? "Session expired" : "Invalid token",
@@ -92,18 +92,22 @@ export async function verifyJWT(
       return ErrorResponse(res, "Not authenticated. Run: zyraa login", 401);
     }
 
-    const secret = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
-    if (!secret) {
+    const jwtSecret = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
+    if (!jwtSecret) {
       logger.error("auth", "JWT_SECRET not configured");
       return ErrorResponse(res, "Server configuration error", 500);
     }
 
     let decoded: JWTPayload;
     try {
-      decoded = jwt.verify(token, secret) as JWTPayload;
+      const { payload } = await jwtVerify(
+        token,
+        new TextEncoder().encode(jwtSecret),
+      );
+      decoded = payload as unknown as JWTPayload;
     } catch (err: unknown) {
       const isExpired =
-        err instanceof Error && err.name === "TokenExpiredError";
+        err instanceof Error && err.message.includes("exp");
       const message = isExpired
         ? "Session expired. Run: zyraa login"
         : "Invalid token. Run: zyraa login";
