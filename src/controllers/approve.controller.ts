@@ -1,44 +1,22 @@
 import { Request, Response, NextFunction } from "express";
-import { CliLoginRequestModel as CliLoginRequest } from "@zyraalabs/zyraa-db";
-import { connectToDatabase } from "../db/db";
 import { SuccessResponse, ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
+import { approveLoginRequest } from "../lib/cli-login";
 
-export async function approveLogin(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-) {
-  await connectToDatabase();
-
+export async function approveLogin(req: Request, res: Response, _next: NextFunction) {
   const { requestId, userId, token } = req.body;
 
   if (!requestId || !userId || !token) {
     return ErrorResponse(res, "Missing required fields", 400);
   }
 
-  const loginRequest = await CliLoginRequest.findOne({ requestId });
+  const approved = await approveLoginRequest(requestId, token);
 
-  if (!loginRequest) {
-    return ErrorResponse(res, "Login request not found", 404);
+  if (!approved) {
+    logger.warn("approve", `Login request invalid or already used: ${requestId}`);
+    return ErrorResponse(res, "Login request not found, expired, or already used", 400);
   }
-
-  if (new Date() > loginRequest.expiresAt) {
-    logger.warn("approve", `Login request expired: ${requestId}`);
-    return ErrorResponse(res, "Login request expired", 400);
-  }
-
-  if (loginRequest.status === "approved") {
-    logger.warn("approve", `Login request already used: ${requestId}`);
-    return ErrorResponse(res, "Login request already used", 400);
-  }
-
-  loginRequest.status = "approved";
-  loginRequest.userId = userId;
-  loginRequest.token = token;
-  await loginRequest.save();
 
   logger.info("approve", `Login request approved for user: ${userId}`);
-
   return SuccessResponse(res, { message: "Login request approved" });
 }

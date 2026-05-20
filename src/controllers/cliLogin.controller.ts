@@ -1,73 +1,42 @@
 import { Request, Response, NextFunction } from "express";
 import { nanoid } from "nanoid";
-import { CliLoginRequestModel as CliLoginRequest } from "@zyraalabs/zyraa-db";
-import { connectToDatabase } from "../db/db";
 import { SuccessResponse, ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
+import { createLoginRequest, getLoginRequest } from "../lib/cli-login";
 
-export async function initLogin(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  await connectToDatabase();
-
+export async function initLogin(_req: Request, res: Response, _next: NextFunction) {
   const requestId = nanoid(16);
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  await CliLoginRequest.create({
-    requestId,
-    status: "pending",
-    expiresAt,
-  });
+  await createLoginRequest(requestId);
 
   const appUrl = process.env.MY_APP_URL || "http://localhost:3002";
-  const url = `${appUrl}/cli-auth?req=${requestId}`;
 
   logger.info("cli-login", `Login request initialized: ${requestId}`);
 
   return SuccessResponse(res, {
     requestId,
-    url,
+    url: `${appUrl}/cli-auth?req=${requestId}`,
     expiresIn: 300,
   });
 }
 
-export async function checkStatus(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  await connectToDatabase();
-
+export async function checkStatus(req: Request, res: Response, _next: NextFunction) {
   const { req: requestId } = req.query;
 
   if (!requestId || typeof requestId !== "string") {
     return ErrorResponse(res, "Request ID is required", 400);
   }
 
-  const loginRequest = await CliLoginRequest.findOne({ requestId });
+  const state = await getLoginRequest(requestId);
 
-  if (!loginRequest) {
-    return ErrorResponse(res, "Login request not found", 404);
-  }
-
-  if (new Date() > loginRequest.expiresAt) {
-    loginRequest.status = "expired";
-    await loginRequest.save();
-    logger.warn("cli-login", `Login request expired: ${requestId}`);
+  if (!state) {
     return ErrorResponse(res, "Login request expired", 400);
   }
 
-  if (loginRequest.status === "approved") {
+  if (state.status === "approved") {
     logger.info("cli-login", `Login request approved: ${requestId}`);
-    return SuccessResponse(res, {
-      status: "approved",
-      token: loginRequest.token,
-    });
+    return SuccessResponse(res, { status: "approved", token: state.token });
   }
 
-  return SuccessResponse(res, {
-    status: loginRequest.status,
-  });
+  return SuccessResponse(res, { status: "pending" });
 }
