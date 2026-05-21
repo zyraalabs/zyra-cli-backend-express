@@ -43,7 +43,6 @@ export async function detectFramework(
       ],
     });
 
-    console.log("LLM response:", message);
     const textContent = message.content.find((block) => block.type === "text");
 
     if (!textContent || textContent.type !== "text") {
@@ -53,7 +52,11 @@ export async function detectFramework(
 
     let detection: FrameworkDetection;
     try {
-      const raw = textContent.text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+      const raw = textContent.text
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/```\s*$/, "")
+        .trim();
       detection = JSON.parse(raw);
     } catch (parseError) {
       logger.error(

@@ -1,12 +1,20 @@
 import { Request, Response } from "express";
 import { logger } from "../utils/logger";
 import { getAnthropicClient } from "../utils/anthropic.util";
-import { GENERATION_MODEL, GENERATION_MAX_TOKENS } from "../config/generation.constants";
+import {
+  GENERATION_MODEL,
+  GENERATION_MAX_TOKENS,
+} from "../config/generation.constants";
 import { getRepromptPrompt } from "../prompts/reprompt.prompt";
 import { GenerationModel as Generation } from "@zyraalabs/zyraa-db";
 
 export async function reprompt(req: Request, res: Response) {
-  const { generationId, prompt, files, framework = "nextjs" } = req.body as {
+  const {
+    generationId,
+    prompt,
+    files,
+    framework = "nextjs",
+  } = req.body as {
     generationId?: string;
     prompt: string;
     files: Array<{ path: string; content: string }>;
@@ -16,7 +24,9 @@ export async function reprompt(req: Request, res: Response) {
   const userId = req.user?.userId;
 
   if (!prompt || !files?.length) {
-    res.status(400).json({ success: false, error: "prompt and files are required" });
+    res
+      .status(400)
+      .json({ success: false, error: "prompt and files are required" });
     return;
   }
 
@@ -34,25 +44,27 @@ export async function reprompt(req: Request, res: Response) {
 
   const userMessage = `Current files:\n\n${fileContents}\n\nChange request: ${prompt}`;
 
-  console.log("\n─────────────────── REPROMPT ───────────────────");
-  console.log(`User prompt   : ${prompt}`);
-  console.log(`Framework     : ${framework}`);
-  console.log(`Files sent    : ${files.map((f) => f.path).join(", ")}`);
-  console.log(`Message chars : ${userMessage.length.toLocaleString()}`);
-  console.log("────────────────────────────────────────────────\n");
-
   try {
     const client = getAnthropicClient();
 
     const stream = client.messages.stream({
       model: GENERATION_MODEL,
       max_tokens: GENERATION_MAX_TOKENS,
-      system: [{ type: "text", text: getRepromptPrompt(framework), cache_control: { type: "ephemeral" } }],
+      system: [
+        {
+          type: "text",
+          text: getRepromptPrompt(framework),
+          cache_control: { type: "ephemeral" },
+        },
+      ],
       messages: [{ role: "user", content: userMessage }],
     });
 
     let fullOutput = "";
-    stream.on("text", (text) => { fullOutput += text; send({ type: "text", text }); });
+    stream.on("text", (text) => {
+      fullOutput += text;
+      send({ type: "text", text });
+    });
 
     const final = await stream.finalMessage();
     const durationMs = Date.now() - startedAt;
@@ -60,7 +72,10 @@ export async function reprompt(req: Request, res: Response) {
 
     const changedFilesCount = (fullOutput.match(/<file path="/g) ?? []).length;
 
-    send({ type: "done", usage: { inputTokens: input_tokens, outputTokens: output_tokens } });
+    send({
+      type: "done",
+      usage: { inputTokens: input_tokens, outputTokens: output_tokens },
+    });
 
     if (userId) {
       await Promise.all([
@@ -80,13 +95,18 @@ export async function reprompt(req: Request, res: Response) {
       ]);
     }
 
-    logger.info("reprompt", `Done. Tokens: ${input_tokens + output_tokens} | Duration: ${durationMs}ms`);
+    logger.info(
+      "reprompt",
+      `Done. Tokens: ${input_tokens + output_tokens} | Duration: ${durationMs}ms`,
+    );
   } catch (error) {
     const err = error as { status?: number };
     const message =
-      err.status === 429 ? "Rate limit exceeded. Please try again shortly." :
-      err.status === 401 ? "Server configuration error" :
-      "Reprompt failed. Please try again.";
+      err.status === 429
+        ? "Rate limit exceeded. Please try again shortly."
+        : err.status === 401
+          ? "Server configuration error"
+          : "Reprompt failed. Please try again.";
 
     logger.error("reprompt", "Stream failed", error);
     send({ type: "error", message });
