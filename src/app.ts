@@ -9,6 +9,7 @@ import approveRoutes from "./routes/approve.routes";
 import generateRoutes from "./routes/generate.routes";
 import detectFrameworkRoutes from "./routes/detectFramework.routes";
 import repromptRoutes from "./routes/reprompt.routes";
+import deployRoutes from "./routes/deploy.routes";
 
 const app = express();
 
@@ -59,5 +60,6 @@ app.use("/api/cli/login/approve", approveRoutes);
 app.use("/api/detect-framework", detectFrameworkRoutes);
 app.use("/api/generate", generateRoutes);
 app.use("/api/reprompt", repromptRoutes);
+app.use("/api/deploy", deployRoutes);
 
 export { app };
