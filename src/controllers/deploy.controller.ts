@@ -16,6 +16,7 @@ function buildSiteName(userId: string, projectName: string): string {
 
 export async function deploy(req: Request, res: Response) {
   const generationId = req.query.generationId as string | undefined;
+  const existingNetlifyId = req.query.netlifyId as string | undefined;
   const userId = req.user?.userId ?? "anon";
   const zip = req.body as Buffer;
 
@@ -24,29 +25,40 @@ export async function deploy(req: Request, res: Response) {
     return;
   }
 
-  const gen = generationId
-    ? await GenerationModel.findById(generationId).select("projectName").lean()
-    : null;
+  let siteId: string;
+  let url: string;
 
-  const name = buildSiteName(userId, gen?.projectName ?? "");
-  logger.info("deploy", `Creating site: ${name} for user: ${userId}`);
+  if (existingNetlifyId) {
+    logger.info("deploy", `Redeploying to existing site: ${existingNetlifyId}`);
+    siteId = existingNetlifyId;
+    const deployment = await deployZip(siteId, zip);
+    url = await waitForDeploy(deployment.id);
+  } else {
+    const gen = generationId
+      ? await GenerationModel.findById(generationId).select("projectName").lean()
+      : null;
 
-  const site = await createSite(name);
-  logger.info("deploy", `Site created: ${site.id}`);
+    const name = buildSiteName(userId, gen?.projectName ?? "");
+    logger.info("deploy", `Creating site: ${name} for user: ${userId}`);
 
-  const deployment = await deployZip(site.id, zip);
-  logger.info("deploy", `Deploy started: ${deployment.id}`);
+    const site = await createSite(name);
+    siteId = site.id;
+    logger.info("deploy", `Site created: ${siteId}`);
 
-  const url = await waitForDeploy(deployment.id);
+    const deployment = await deployZip(siteId, zip);
+    logger.info("deploy", `Deploy started: ${deployment.id}`);
+    url = await waitForDeploy(deployment.id);
+  }
+
   logger.info("deploy", `Live: ${url}`);
 
   if (generationId) {
     await GenerationModel.findByIdAndUpdate(
       generationId,
-      { $set: { deploymentUrl: url } },
-      { strict: false }
+      { $set: { deploymentUrl: url, netlifyId: siteId } },
+      { strict: false },
     );
   }
 
-  res.json({ url });
+  res.json({ url, netlifyId: siteId });
 }
