@@ -18,8 +18,8 @@ importers:
         specifier: ^1.38.0
         version: 1.38.0
       '@zyraalabs/zyraa-db':
-        specifier: ^1.1.0
-        version: 1.1.0(mongoose@9.0.0)
+        specifier: ^1.2.0
+        version: 1.2.0(mongoose@9.0.0)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -419,8 +419,8 @@ packages:
   '@upstash/redis@1.38.0':
     resolution: {integrity: sha512-wu+dZBptlLy0+MCUEoHmzrY/TnmgDey3+c7EbIGwrLqAvkP8yi5MWZHYGIFtAygmL4Bkz2TdFu+eU0vFPncIcg==}
 
-  '@zyraalabs/zyraa-db@1.1.0':
-    resolution: {integrity: sha512-bphxjXqCPmN1kc4GqCcS5kwdSWQHIBC0R8OgBSrhjnOVchosRmmaiVi5aHR4rdUi7oF/7jkWidlgxELW06fGpg==, tarball: https://npm.pkg.github.com/download/@zyraalabs/zyraa-db/1.1.0/bbcaa2a67f09134988fba86cef678fb3336888fc}
+  '@zyraalabs/zyraa-db@1.2.0':
+    resolution: {integrity: sha512-iEQm/0fFsHlvk7BjpZ9cLNIfvCXX32J3Cwbh0f1lRD+40NugG3ha6Z2JPFYIAfD0uIWjMek8AK1oTl87UFJ9+w==, tarball: https://npm.pkg.github.com/download/@zyraalabs/zyraa-db/1.2.0/52db4d97566dc0eadd5e8ab3bf891e47300b9089}
     peerDependencies:
       mongoose: '>=8.0.0'
 
@@ -1160,7 +1160,7 @@ snapshots:
     dependencies:
       uncrypto: 0.1.3
 
-  '@zyraalabs/zyraa-db@1.1.0(mongoose@9.0.0)':
+  '@zyraalabs/zyraa-db@1.2.0(mongoose@9.0.0)':
     dependencies:
       mongoose: 9.0.0
 
