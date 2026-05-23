@@ -7,6 +7,9 @@ import { verifyJWT, checkAndDeductCredit } from "../middlewares/auth.middleware"
 const router = Router();
 
 router.post("/select", verifyJWT, asyncHandler(repromptSelect));
-router.post("/", verifyJWT, checkAndDeductCredit, asyncHandler(reprompt));
+router.post("/", verifyJWT, (req, res, next) => {
+  if (req.body?.isFix) return next();
+  return checkAndDeductCredit(req, res, next);
+}, asyncHandler(reprompt));
 
 export default router;
