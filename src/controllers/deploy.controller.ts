@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import AdmZip from "adm-zip";
 import { GenerationModel } from "@zyraalabs/zyraa-db";
 import { logger } from "../utils/logger";
-import { createProject, deployFiles, waitForDeployment, type VercelFile } from "../lib/vercel";
+import { createProject, setProjectEnvVars, deployFiles, waitForDeployment, type VercelFile } from "../lib/vercel";
 
 function buildProjectName(_userId: string, projectName: string): string {
   const slug = (projectName || "app")
@@ -29,11 +29,25 @@ function extractSourceFiles(zip: Buffer): VercelFile[] {
   return files;
 }
 
+function parseEnvHeader(header: string | undefined): Record<string, string> {
+  if (!header) return {};
+  try {
+    const parsed: unknown = JSON.parse(Buffer.from(header, "base64").toString("utf-8"));
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, string>;
+    }
+  } catch {
+    // malformed header — proceed without env vars
+  }
+  return {};
+}
+
 export async function deploy(req: Request, res: Response) {
   const generationId = req.query.generationId as string | undefined;
   const existingProjectId = req.query.vercelProjectId as string | undefined;
   const userId = req.user?.userId ?? "anon";
   const zip = req.body as Buffer;
+  const envVars = parseEnvHeader(req.headers["x-env-vars"] as string | undefined);
 
   if (!Buffer.isBuffer(zip) || zip.length === 0) {
     res.status(400).json({ error: "No zip payload received" });
@@ -56,6 +70,10 @@ export async function deploy(req: Request, res: Response) {
       : null;
     projectName = gen?.projectName ?? buildProjectName(userId, "");
     logger.info("deploy", `Redeploying to existing project: ${projectId}`);
+    if (Object.keys(envVars).length > 0) {
+      await setProjectEnvVars(projectId, envVars);
+      logger.info("deploy", `Updated ${Object.keys(envVars).length} env vars`);
+    }
   } else {
     const gen = generationId
       ? await GenerationModel.findById(generationId).select("projectName").lean()
@@ -65,6 +83,10 @@ export async function deploy(req: Request, res: Response) {
     const project = await createProject(projectName);
     projectId = project.id;
     logger.info("deploy", `Project created: ${projectId}`);
+    if (Object.keys(envVars).length > 0) {
+      await setProjectEnvVars(projectId, envVars);
+      logger.info("deploy", `Set ${Object.keys(envVars).length} env vars`);
+    }
   }
 
   logger.info("deploy", `Uploading ${files.length} files and deploying`);

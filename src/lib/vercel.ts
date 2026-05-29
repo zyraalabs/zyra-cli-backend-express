@@ -51,6 +51,27 @@ export async function createProject(name: string): Promise<{ id: string }> {
   });
 }
 
+export async function setProjectEnvVars(
+  projectId: string,
+  envVars: Record<string, string>,
+): Promise<void> {
+  const entries = Object.entries(envVars).filter(([, v]) => v.trim() !== "");
+  if (entries.length === 0) return;
+
+  const payload = entries.map(([key, value]) => ({
+    key,
+    value,
+    type: "encrypted",
+    target: ["production", "preview", "development"],
+  }));
+
+  await vFetch(`/v10/projects/${projectId}/env${teamParam()}`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+}
+
 async function uploadFile(file: VercelFile): Promise<DeploymentFileRef> {
   const sha = crypto.createHash("sha1").update(file.content).digest("hex");
   const size = file.content.length;
