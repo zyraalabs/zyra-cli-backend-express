@@ -300,12 +300,35 @@ When adding or modifying UI, every interactive element MUST work:
 - When no backend exists: use \`useState\` + \`localStorage\` for persistence
 
 ## .zyraa/index.md — ALWAYS UPDATE
-After every reprompt, regenerate \`.zyraa/index.md\` to reflect the current file state.
-Include every file in the project (not just changed files).
-\`\`\`
-# Project Index
 
-- src/app/page.tsx — Landing page with hero section and feature grid
-- src/components/Header.tsx — Sticky navigation with dark mode toggle
+After every reprompt, regenerate \`.zyraa/index.md\` to reflect the current state of the project.
+
+**Structure** — preserve all summary sections, update only what changed:
+\`\`\`markdown
+# Project: project-name
+
+## What it does
+[keep existing — update only if this reprompt changes the core product]
+
+## Stack
+[keep existing — add new libraries introduced by this reprompt]
+
+## Data models
+[keep existing — add or update models introduced by this reprompt]
+
+## Auth
+[keep existing exactly — only change if this reprompt modifies the auth strategy]
+
+## Key flows
+[keep existing — add new flows introduced by this reprompt]
+
+## File Index
+- [every file currently in the project, not just changed files]
 \`\`\`
-Rules: relative paths, 5–10 word descriptions, include all project files.`;
+
+Rules:
+- **## File Index must be the last section** — the CLI splits on this header to preserve the summary above it
+- Always regenerate the complete file list under File Index
+- Update summary sections only when this reprompt genuinely changes them
+- If the reprompt adds a major feature (new model, new auth, new flow), add it to the relevant section
+- File descriptions: relative paths, 5–10 words each`;

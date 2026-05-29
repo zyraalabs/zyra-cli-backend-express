@@ -572,22 +572,47 @@ ${
 
 ## .zyraa/index.md Format
 
-ALWAYS generate this file. It enables smart re-prompting in the Zyraa CLI.
+ALWAYS generate this file. It is the single source of truth the Zyraa CLI uses when deciding which files to read for reprompts. A rich, accurate index means better targeted edits.
 
-Format — one line per file, path then description:
-\`\`\`
-# Project Index
+**Required structure — follow this exactly:**
 
+\`\`\`markdown
+# Project: project-name
+
+## What it does
+One to two sentences. What the product is and who uses it.
+
+## Stack
+Next.js 16 · MongoDB · Cookie JWT auth · Recharts · bcryptjs · Zod
+
+## Data models
+- User: email, password (hashed), username, theme, isAdmin
+- Link: userId, title, url, order, clicks
+- Click: linkId, timestamp (anonymous — no userId required)
+
+## Auth
+Cookie-based JWT: login API sets httpOnly cookie, middleware reads
+request.cookies.get("token"), protects /dashboard and /admin routes.
+
+## Key flows
+1. Public profile: GET /[username] → fetch links → click → POST /api/links/[id]/click → redirect
+2. Dashboard: middleware-protected → link CRUD + reorder → analytics charts → theme picker
+3. Admin: /admin protected by isAdmin flag → list all users and link counts
+
+## File Index
 - package.json — Project dependencies and scripts
-- src/app/layout.tsx — Root layout with Inter font variable and metadata
-- src/app/page.tsx — Landing page with hero section and CTA
-- src/app/globals.css — Global CSS with Tailwind v4 imports
-- src/lib/utils.ts — cn utility helper for class merging
+- src/app/layout.tsx — Root layout with Inter font variable
+- src/app/page.tsx — Landing page with hero and feature sections
 - src/lib/axios.ts — Shared axios instance with auth interceptor
-- src/components/ui/button.tsx — Button component with size and variant props
 \`\`\`
 
-Include EVERY generated file (except .env files and biome.json). Keep descriptions 5–10 words.
+Rules:
+- The summary sections (**What it does** through **Key flows**) are preserved across reprompts — write them accurately
+- **Auth** section is critical: reprompts read it to know exactly how auth works in this project
+- **## File Index** must be the last section — the CLI splits on this header to preserve the summary
+- Include EVERY generated file under File Index (except .env files and biome.json)
+- Keep file descriptions 5–10 words
+- If the app has no auth, omit the Auth section; if no notable flows, omit Key flows
 
 ## Output Format
 
