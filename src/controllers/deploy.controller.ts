@@ -1,18 +1,18 @@
+import crypto from "crypto";
 import { Request, Response } from "express";
 import AdmZip from "adm-zip";
 import { GenerationModel } from "@zyraalabs/zyraa-db";
 import { logger } from "../utils/logger";
 import { createProject, deployFiles, waitForDeployment, type VercelFile } from "../lib/vercel";
 
-function buildProjectName(userId: string, projectName: string): string {
+function buildProjectName(_userId: string, projectName: string): string {
   const slug = (projectName || "app")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 24);
-  const suffix = userId.slice(-6);
-  const ts = Date.now().toString(36);
-  return `zyraa-${suffix}-${slug}-${ts}`;
+    .slice(0, 30);
+  const random = crypto.randomBytes(4).toString("hex");
+  return `zyraa-${slug}-${random}`;
 }
 
 function extractSourceFiles(zip: Buffer): VercelFile[] {
