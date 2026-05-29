@@ -1,11 +1,14 @@
 {
-	"folders": [
-		{
-			"path": ".."
-		},
-		{
-			"path": "../../Zyraa Test/test3"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "..",
+    },
+    {
+      "path": "../../Zyraa Test/test3",
+    },
+    {
+      "path": "../../Zyraa Test/test5",
+    },
+  ],
+  "settings": {},
 }

@@ -1,22 +1,37 @@
 import { Request, Response } from "express";
+import AdmZip from "adm-zip";
 import { GenerationModel } from "@zyraalabs/zyraa-db";
 import { logger } from "../utils/logger";
-import { createSite, deployZip, waitForDeploy } from "../lib/netlify";
+import { createProject, deployFiles, waitForDeployment, type VercelFile } from "../lib/vercel";
 
-function buildSiteName(userId: string, projectName: string): string {
+function buildProjectName(userId: string, projectName: string): string {
   const slug = (projectName || "app")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 20);
+    .slice(0, 24);
   const suffix = userId.slice(-6);
   const ts = Date.now().toString(36);
   return `zyraa-${suffix}-${slug}-${ts}`;
 }
 
+function extractSourceFiles(zip: Buffer): VercelFile[] {
+  const adm = new AdmZip(zip);
+  const files: VercelFile[] = [];
+
+  for (const entry of adm.getEntries()) {
+    if (entry.isDirectory) continue;
+    const path = entry.entryName.replace(/^\.?\//, "");
+    if (!path) continue;
+    files.push({ path, content: entry.getData() });
+  }
+
+  return files;
+}
+
 export async function deploy(req: Request, res: Response) {
   const generationId = req.query.generationId as string | undefined;
-  const existingNetlifyId = req.query.netlifyId as string | undefined;
+  const existingProjectId = req.query.vercelProjectId as string | undefined;
   const userId = req.user?.userId ?? "anon";
   const zip = req.body as Buffer;
 
@@ -25,40 +40,47 @@ export async function deploy(req: Request, res: Response) {
     return;
   }
 
-  let siteId: string;
-  let url: string;
+  const files = extractSourceFiles(zip);
+  if (files.length === 0) {
+    res.status(400).json({ error: "Zip contains no files" });
+    return;
+  }
 
-  if (existingNetlifyId) {
-    logger.info("deploy", `Redeploying to existing site: ${existingNetlifyId}`);
-    siteId = existingNetlifyId;
-    const deployment = await deployZip(siteId, zip);
-    url = await waitForDeploy(deployment.id);
+  let projectId: string;
+  let projectName: string;
+
+  if (existingProjectId) {
+    projectId = existingProjectId;
+    const gen = generationId
+      ? await GenerationModel.findById(generationId).select("projectName").lean()
+      : null;
+    projectName = gen?.projectName ?? buildProjectName(userId, "");
+    logger.info("deploy", `Redeploying to existing project: ${projectId}`);
   } else {
     const gen = generationId
       ? await GenerationModel.findById(generationId).select("projectName").lean()
       : null;
-
-    const name = buildSiteName(userId, gen?.projectName ?? "");
-    logger.info("deploy", `Creating site: ${name} for user: ${userId}`);
-
-    const site = await createSite(name);
-    siteId = site.id;
-    logger.info("deploy", `Site created: ${siteId}`);
-
-    const deployment = await deployZip(siteId, zip);
-    logger.info("deploy", `Deploy started: ${deployment.id}`);
-    url = await waitForDeploy(deployment.id);
+    projectName = buildProjectName(userId, gen?.projectName ?? "");
+    logger.info("deploy", `Creating Vercel project: ${projectName}`);
+    const project = await createProject(projectName);
+    projectId = project.id;
+    logger.info("deploy", `Project created: ${projectId}`);
   }
 
+  logger.info("deploy", `Uploading ${files.length} files and deploying`);
+  const deployment = await deployFiles(projectId, projectName, files);
+  logger.info("deploy", `Deployment started: ${deployment.id}`);
+
+  const url = await waitForDeployment(deployment.id);
   logger.info("deploy", `Live: ${url}`);
 
   if (generationId) {
     await GenerationModel.findByIdAndUpdate(
       generationId,
-      { $set: { deploymentUrl: url, netlifyId: siteId } },
+      { $set: { deploymentUrl: url, vercelProjectId: projectId } },
       { strict: false },
     );
   }
 
-  res.json({ url, netlifyId: siteId });
+  res.json({ url, vercelProjectId: projectId });
 }
