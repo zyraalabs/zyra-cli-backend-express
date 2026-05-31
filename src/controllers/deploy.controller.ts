@@ -63,46 +63,41 @@ export async function deploy(req: Request, res: Response) {
   let projectId: string;
   let projectName: string;
 
-  if (existingProjectId) {
-    projectId = existingProjectId;
-    const gen = generationId
-      ? await GenerationModel.findById(generationId).select("projectName").lean()
-      : null;
-    projectName = gen?.projectName ?? buildProjectName(userId, "");
-    logger.info("deploy", `Redeploying to existing project: ${projectId}`);
-    if (Object.keys(envVars).length > 0) {
-      await setProjectEnvVars(projectId, envVars);
-      logger.info("deploy", `Updated ${Object.keys(envVars).length} env vars`);
+  try {
+    if (existingProjectId) {
+      projectId = existingProjectId;
+      const gen = generationId
+        ? await GenerationModel.findById(generationId).select("projectName").lean()
+        : null;
+      projectName = gen?.projectName ?? buildProjectName(userId, "");
+      if (Object.keys(envVars).length > 0) await setProjectEnvVars(projectId, envVars);
+    } else {
+      const gen = generationId
+        ? await GenerationModel.findById(generationId).select("projectName").lean()
+        : null;
+      projectName = buildProjectName(userId, gen?.projectName ?? "");
+      const project = await createProject(projectName);
+      projectId = project.id;
+      if (Object.keys(envVars).length > 0) await setProjectEnvVars(projectId, envVars);
     }
-  } else {
-    const gen = generationId
-      ? await GenerationModel.findById(generationId).select("projectName").lean()
-      : null;
-    projectName = buildProjectName(userId, gen?.projectName ?? "");
-    logger.info("deploy", `Creating Vercel project: ${projectName}`);
-    const project = await createProject(projectName);
-    projectId = project.id;
-    logger.info("deploy", `Project created: ${projectId}`);
-    if (Object.keys(envVars).length > 0) {
-      await setProjectEnvVars(projectId, envVars);
-      logger.info("deploy", `Set ${Object.keys(envVars).length} env vars`);
+
+    const deployment = await deployFiles(projectId, projectName, files);
+    const url = await waitForDeployment(deployment.id);
+
+    logger.info("deploy", `✓ Deployed: ${url} — env vars sent: ${Object.keys(envVars).join(", ") || "none"}`);
+
+    if (generationId) {
+      await GenerationModel.findByIdAndUpdate(
+        generationId,
+        { $set: { deploymentUrl: url, vercelProjectId: projectId } },
+        { strict: false },
+      );
     }
+
+    res.json({ url, vercelProjectId: projectId });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "Unknown error";
+    logger.error("deploy", `✗ Deployment failed: ${reason}`);
+    throw err;
   }
-
-  logger.info("deploy", `Uploading ${files.length} files and deploying`);
-  const deployment = await deployFiles(projectId, projectName, files);
-  logger.info("deploy", `Deployment started: ${deployment.id}`);
-
-  const url = await waitForDeployment(deployment.id);
-  logger.info("deploy", `Live: ${url}`);
-
-  if (generationId) {
-    await GenerationModel.findByIdAndUpdate(
-      generationId,
-      { $set: { deploymentUrl: url, vercelProjectId: projectId } },
-      { strict: false },
-    );
-  }
-
-  res.json({ url, vercelProjectId: projectId });
 }

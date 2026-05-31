@@ -37,6 +37,10 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use(async (req, res, next) => {
+  if (process.env.DISABLE_ARCJET === "true") {
+    next();
+    return;
+  }
   const decision = await aj.protect(req);
   if (decision.isDenied()) {
     const reason = decision.reason.isRateLimit()

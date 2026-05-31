@@ -97,7 +97,7 @@ async function uploadFile(file: VercelFile): Promise<DeploymentFileRef> {
 export async function deployFiles(
   projectId: string,
   projectName: string,
-  files: VercelFile[]
+  files: VercelFile[],
 ): Promise<{ id: string; url: string }> {
   const fileRefs = await Promise.all(files.map(uploadFile));
 
@@ -121,7 +121,7 @@ export async function deployFiles(
 
 export async function waitForDeployment(
   deployId: string,
-  maxAttempts = 80
+  maxAttempts = 80,
 ): Promise<string> {
   for (let i = 0; i < maxAttempts; i++) {
     const data = await vFetch<{

@@ -24,72 +24,64 @@ For anything NOT in step 1, ask: *if I knew this, would the generated code be me
 **Step 3 — Filter to only what you cannot default on.**
 A question is only worth asking if you genuinely cannot make a confident default choice without the user's input. If there is an obvious, sensible default — make it silently and don't ask.
 
-## What "already decided" looks like — never ask about these
+## What "already decided" looks like — skip these
 
-| User said | What is decided | Do NOT ask |
+Only skip a question if the user has explicitly mentioned it:
+
+| User said | What is decided | Skip |
 |---|---|---|
-| "MongoDB" | database = MongoDB | don't ask about storage |
-| "PostgreSQL" / "Supabase" | database chosen | don't ask about storage |
-| "JWT auth" | auth type = custom JWT | don't ask if auth is needed |
-| "email/password" | auth method = credentials | don't ask about providers |
-| "Google OAuth" | auth provider = Google | don't ask which provider |
-| "NextAuth" | auth library chosen | don't ask about auth setup |
-| "Stripe" / "Razorpay" | payment provider chosen | don't ask about payments |
-| "6 pre-built themes" | themes feature exists | only ask what they change if it affects data model |
-| "admin panel" | admin feature exists | only ask how access is granted if genuinely ambiguous |
-| "real-time" | websockets/polling needed | don't ask about real-time |
-| "dark" / "minimal" / "glassmorphism" | visual direction set | don't ask about theme |
-| "simple" / "basic" / "MVP" | scope is intentionally narrow | ask fewer questions |
+| "MongoDB" / "PostgreSQL" / "Supabase" | database chosen | don't ask about storage |
+| "JWT auth" / "email/password" / "Google OAuth" / "NextAuth" | auth decided | don't ask about auth |
+| "Stripe" / "Razorpay" | payments decided | don't ask about payments |
+| "no auth" / "anyone can" / "public" | no auth needed | don't ask about auth |
+| "simple" / "basic" / "MVP" | narrow scope | ask fewer questions |
+
+Everything else is fair game — if it's not mentioned, ask about it.
 
 ## Question standards
 
-Every question that makes it through the filter must meet all three:
-1. The answer changes real code (a different component, route, data model, or installed package)
-2. The user has not already answered it, explicitly or implicitly
-3. A confident default cannot be made without their input
+Every question must be:
+1. Not already answered by the user
+2. Specific to this app — not a generic boilerplate question
 
 Question format:
-- One decision per question — never bundle two decisions into one question
-- 2–4 options, mutually exclusive, with genuinely different code outcomes
-- Option 1 is always the most common/sensible default
-- Labels: 2–4 words. Descriptions: 3–7 words clarifying what it means
+- One decision per question
+- 2–4 options with genuinely different outcomes
+- Option 1 is the most common/sensible default
+- Labels: 2–4 words. Descriptions: 3–7 words
 - Category: theme | style | features | technical | env
 
-## Calibration — study these carefully
+## What to ask about
+
+Ask freely about any of these that aren't already decided:
+- **Database** — needed? which one?
+- **Auth** — needed? what method?
+- **Visual style** — minimal/clean vs bold/colorful vs dark/modern
+- **Key features** — what should users actually be able to do?
+- **User roles** — admin panel? different permissions?
+- **Public vs private** — is content visible to everyone or only logged-in users?
+- **Any other app-specific detail** that shapes the data model or UI
+
+## Calibration
 
 **"Build a link in bio tool. MongoDB, JWT, email/password auth, 6 pre-built themes, click analytics, admin panel."**
-
-Step 1 — already decided: database=MongoDB, auth=JWT+email/password, themes=6 (exist), analytics=click tracking, admin=exists.
-Step 2 — genuinely open: visual tone of the public profile page, what the 6 themes actually change (colors only? layout? fonts?), whether there's a marketing landing page or direct signup, how admin privilege is granted (first user? DB flag?), what the public profile shows to anonymous visitors.
-Step 3 — cannot default on all of these without guidance.
-→ Ask 4–5 questions about these open items. Do NOT ask "do you need auth?", "which database?", or "which auth provider?".
+→ DB, auth, payments decided. Ask about: what the 6 themes change, how admin access is granted, visual tone of the public profile, what the profile shows visitors.
+→ 3–4 questions
 
 **"Todo app"**
-
-Step 1 — already decided: the core feature (todos).
-Step 2 — genuinely open: persistence (localStorage only vs backend + DB), auth needed, visual direction.
-Step 3 — these all meaningfully change the architecture.
-→ Ask 2–3 questions.
+→ Nothing decided. Ask: DB needed? auth needed? visual style?
+→ 2–3 questions
 
 **"E-commerce with Stripe, PostgreSQL, product catalog, cart, checkout"**
-
-Step 1 — decided: payments=Stripe, database=PostgreSQL, core features.
-Step 2 — open: visual tone/feel, product card layout style, user accounts + order history, email confirmations, admin product management UI.
-Step 3 — these change components and routes.
-→ Ask 3–5 questions about these. Do NOT ask about payment provider or database.
-
-**"SaaS dashboard with Next.js, Supabase, Google OAuth, recharts for analytics"**
-
-Step 1 — decided: framework=Next.js, database=Supabase, auth=Google OAuth, charts=recharts.
-Step 2 — open: what the dashboard actually tracks (what data?), visual character (dense like Linear vs spacious like Notion), sidebar vs top nav, any secondary features (notifications? settings? team management?).
-Step 3 — what the dashboard tracks is critical — it determines the entire data model.
-→ Ask 3–4 questions. Do NOT ask about any of the already-decided items.
+→ DB and payments decided. Ask: user accounts needed? visual style? admin product management?
+→ 2–4 questions
 
 **"Fix the signup button not working"**
 → {"needsClarification":false,"questions":[]}
 
 **"Simple landing page for my startup"**
-→ The word "simple" caps scope. Ask 1 question at most (visual tone), skip everything else.
+→ Ask: visual style? that's it.
+→ 1 question
 
 ## Output
 
