@@ -29,6 +29,7 @@ These files MUST be present in EVERY generation, no exceptions:
 - **src/lib/utils.ts** — required by every shadcn/ui component
 - **.env.example** — CLI reads this to ask user for env values
 - **.env.local** — generate with **identical** placeholder content to .env.example
+- **zyraa.md** — project context file used by the CLI for future reprompts (see format below)
 
 **When the app has API routes, ALSO MANDATORY:**
 - **src/lib/api-response.ts** — every route imports \`successResponse\`/\`errorResponse\` from here
@@ -610,6 +611,7 @@ The project was scaffolded with \`pnpm create next-app\`. Only override scaffold
 - components.json
 - **.env.example** and **.env.local** (identical placeholder content)
 - **.zyraa/index.md**
+- **zyraa.md** (see format below)
 
 **DO NOT generate** (scaffold creates these correctly — leave them untouched):
 - next.config.ts
@@ -659,6 +661,52 @@ Rules:
 - Include EVERY generated file under File Index (except .env files and biome.json)
 - Keep file descriptions 5–10 words
 - If the app has no auth, omit the Auth section; if no notable flows, omit Key flows
+
+## zyraa.md Format
+
+ALWAYS generate this file at the project root. The CLI reads it during reprompts to give the AI full context about the existing project — what stack it uses, what features are built, and what env vars exist — so it never asks redundant clarification questions about already-decided things.
+
+**Required structure — follow this exactly:**
+
+\`\`\`markdown
+# {Project Name}
+
+> {One sentence: what the app does and who it's for.}
+
+## Stack
+- **Framework:** Next.js 16 (App Router, Turbopack)
+- **Database:** MongoDB (Mongoose)
+- **Auth:** Cookie-based JWT (httpOnly, proxy-protected routes)
+- **Styling:** Tailwind CSS v4 + shadcn/ui (New York style)
+- **Payments:** Stripe   ← omit if not used
+- **Email:** Nodemailer  ← omit if not used
+
+## Features
+- {Feature 1 — one line, what it does from the user's perspective}
+- {Feature 2}
+- {Feature 3}
+  ← List every major feature the user can interact with
+
+## Env Variables
+| Variable | Purpose |
+|---|---|
+| \`MONGODB_URI\` | MongoDB connection string |
+| \`JWT_SECRET\` | Signs and verifies auth tokens |
+| \`NEXT_PUBLIC_APP_URL\` | Base URL for redirect and CORS |
+
+## Architecture
+- API routes live in \`src/app/api/\`
+- MongoDB connection cached in \`src/lib/db.ts\`
+- Shared axios instance (with auth interceptor) in \`src/lib/axios.ts\`
+- JWT sign/verify utilities in \`src/lib/auth.ts\`  ← omit if no JWT auth
+- Route protection via \`src/proxy.ts\`  ← omit if no protected routes
+\`\`\`
+
+Rules:
+- Write real values — not the template placeholders above. Replace every \`{...}\` with actual content.
+- Omit any section line that doesn't apply (e.g. no Payments line if no Stripe).
+- Keep feature bullets tight (one line each). This file is read as context, not documentation.
+- Always include the Env Variables table — list every \`process.env.XXX\` variable generated.
 
 ## Output Format
 

@@ -25,7 +25,12 @@ interface ClarifyResult {
 const FALLBACK: ClarifyResult = { needsClarification: false, questions: [] };
 
 export async function clarify(req: Request, res: Response) {
-  const { prompt } = req.body;
+  const { prompt, mode, framework, zyraaMdContent } = req.body as {
+    prompt: string;
+    mode?: "generate" | "reprompt";
+    framework?: string;
+    zyraaMdContent?: string;
+  };
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return ErrorResponse(res, "prompt is required", 400);
@@ -33,6 +38,14 @@ export async function clarify(req: Request, res: Response) {
 
   try {
     const client = getAnthropicClient();
+
+    let userContent = `User's prompt: ${prompt.trim()}`;
+    if (mode === "reprompt" && zyraaMdContent) {
+      userContent = `Project context:\n${zyraaMdContent}\n\nChange request: ${prompt.trim()}`;
+    } else if (mode === "reprompt") {
+      userContent = `Framework: ${framework ?? "unknown"}\nChange request: ${prompt.trim()}`;
+    }
+
     const message = await client.messages.create({
       model: CLARIFY_MODEL,
       max_tokens: CLARIFY_MAX_TOKENS,
@@ -40,8 +53,8 @@ export async function clarify(req: Request, res: Response) {
         type: "enabled",
         budget_tokens: CLARIFY_THINKING_BUDGET,
       },
-      system: getClarificationPrompt(),
-      messages: [{ role: "user", content: `User's prompt: ${prompt.trim()}` }],
+      system: getClarificationPrompt(mode ?? "generate"),
+      messages: [{ role: "user", content: userContent }],
     });
 
     // Extended thinking produces [thinking_block, text_block] — find the text block
