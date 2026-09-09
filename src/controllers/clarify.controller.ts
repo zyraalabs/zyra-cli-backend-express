@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { getAnthropicClient } from "../utils/anthropic.util";
-import { CLARIFY_MODEL, CLARIFY_MAX_TOKENS, CLARIFY_THINKING_BUDGET } from "../config/generation.constants";
+import {
+  CLARIFY_MODEL,
+  CLARIFY_MAX_TOKENS,
+} from "../config/generation.constants";
 import { getClarificationPrompt } from "../prompts/clarification.prompt";
 import { SuccessResponse, ErrorResponse } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
@@ -49,10 +52,8 @@ export async function clarify(req: Request, res: Response) {
     const message = await client.messages.create({
       model: CLARIFY_MODEL,
       max_tokens: CLARIFY_MAX_TOKENS,
-      thinking: {
-        type: "enabled",
-        budget_tokens: CLARIFY_THINKING_BUDGET,
-      },
+      thinking: { type: "adaptive" },
+      output_config: { effort: "medium" },
       system: getClarificationPrompt(mode ?? "generate"),
       messages: [{ role: "user", content: userContent }],
     });
@@ -70,15 +71,20 @@ export async function clarify(req: Request, res: Response) {
       const match = text.match(/\{[\s\S]*\}/);
       const json = JSON.parse(match ? match[0] : text);
 
-      if (typeof json.needsClarification !== "boolean") throw new Error("missing needsClarification");
-      if (!Array.isArray(json.questions)) throw new Error("missing questions array");
+      if (typeof json.needsClarification !== "boolean")
+        throw new Error("missing needsClarification");
+      if (!Array.isArray(json.questions))
+        throw new Error("missing questions array");
 
       parsed = {
         needsClarification: json.needsClarification,
         questions: json.questions,
       };
     } catch {
-      logger.warn("clarify", `JSON parse failed: ${textBlock.text.slice(0, 200)}`);
+      logger.warn(
+        "clarify",
+        `JSON parse failed: ${textBlock.text.slice(0, 200)}`,
+      );
       return SuccessResponse(res, FALLBACK);
     }
 

@@ -8,4 +8,3 @@ export const REPROMPT_SELECT_MODEL =
   process.env.REPROMPT_SELECT_MODEL ?? "claude-sonnet-5";
 export const CLARIFY_MODEL = process.env.CLARIFY_MODEL ?? "claude-sonnet-5";
 export const CLARIFY_MAX_TOKENS = 4000;
-export const CLARIFY_THINKING_BUDGET = 2000;
