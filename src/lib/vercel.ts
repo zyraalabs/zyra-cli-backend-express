@@ -145,12 +145,18 @@ export async function waitForDeployment(
     const data = await vFetch<{
       readyState: string;
       url: string;
+      alias?: string[];
       errorMessage?: string | null;
     }>(`/v13/deployments/${deployId}${teamParam()}`, {
       headers: authHeaders(),
     });
 
-    if (data.readyState === "READY") return `https://${data.url}`;
+    if (data.readyState === "READY") {
+      const stable = (data.alias ?? [])
+        .filter(Boolean)
+        .sort((a, b) => a.length - b.length)[0];
+      return `https://${stable ?? data.url}`;
+    }
     if (data.readyState === "ERROR")
       throw new Error(data.errorMessage ?? "Vercel deployment failed");
     if (data.readyState === "CANCELED")
