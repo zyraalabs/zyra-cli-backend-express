@@ -27,7 +27,7 @@ These files MUST be present in EVERY generation, no exceptions:
 - **src/app/page.tsx** — home page, app returns 404 without it
 - **src/app/globals.css** — required by layout.tsx
 - **postcss.config.mjs** — required for Tailwind v4 to compile at all; without it the app has ZERO styling and \`next build\` fails
-- **pnpm-workspace.yaml** — required for \`pnpm install\` to succeed; exactly the three-line \`onlyBuiltDependencies\` form, never \`allowBuilds\`
+- **pnpm-workspace.yaml** — required for \`pnpm install\` to succeed; \`allowBuilds\` form with explicit \`true\` values
 - **src/lib/utils.ts** — required by every shadcn/ui component
 - **.env.example** — CLI reads this to ask user for env values
 - **.env.local** — generate with **identical** placeholder content to .env.example
@@ -59,15 +59,19 @@ ${
 **BUILD-BLOCKING CONFIG — generate these two files in EVERY output, scaffolded or not. Omitting either produces an app with zero CSS that fails \`next build\`. There are no exceptions to this rule.**
 
 1. **postcss.config.mjs** — without this, \`@import "tailwindcss"\` never compiles, every utility class is inert, and the app renders as unstyled HTML.
-2. **pnpm-workspace.yaml** — must contain EXACTLY the four lines below and nothing else.
+2. **pnpm-workspace.yaml** — must contain EXACTLY the three lines below and nothing else.
 
 \`\`\`yaml
-onlyBuiltDependencies:
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
 \`\`\`
 
-**NEVER write \`allowBuilds:\` into pnpm-workspace.yaml. NEVER write placeholder or instructional text such as "set this to true or false" into any config file.** Every file you emit must be valid, final, machine-readable config. A config file containing prose is a hard install failure: pnpm reports \`ERR_PNPM_IGNORED_BUILDS\` and dependency installation fails on the user's first run.
+\`sharp\` and \`unrs-resolver\` ship native binaries and must run their install scripts. Current pnpm blocks unapproved build scripts and fails the install with \`ERR_PNPM_IGNORED_BUILDS\`. Only \`allowBuilds\` with explicit \`true\` values approves them.
+
+**Every value must be a literal \`true\`. NEVER write placeholder or instructional text such as "set this to true or false" into any config file** — pnpm writes that stub itself when a build script is unapproved, and it is not a valid approval. If you emit it, the install fails exactly as if the file were absent.
+
+Do NOT use the \`onlyBuiltDependencies\` list form here; on current pnpm it does not approve the scripts and the install still fails.
 
 Do NOT add a \`"pnpm"\` key to package.json — pnpm ignores it and reads \`pnpm-workspace.yaml\` instead.
 
@@ -669,7 +673,7 @@ ${
 - **zyraa.md** (see format below)
 
 - **postcss.config.mjs** — ALWAYS generate. Without it Tailwind never compiles and the app ships with no CSS.
-- **pnpm-workspace.yaml** — ALWAYS generate, with exactly the three-line \`onlyBuiltDependencies\` form shown above.
+- **pnpm-workspace.yaml** — ALWAYS generate, with exactly the three-line \`allowBuilds\` form shown above.
 
 **DO NOT generate**:
 ${
@@ -1023,7 +1027,7 @@ Re-read the list of file paths you just emitted. Every file below must be presen
 2. \`src/app/page.tsx\`
 3. \`src/app/globals.css\` — with both \`@import\` lines first
 4. \`postcss.config.mjs\`
-5. \`pnpm-workspace.yaml\` — \`onlyBuiltDependencies\` form, never \`allowBuilds\`
+5. \`pnpm-workspace.yaml\` — \`allowBuilds\` form with literal \`true\` values, never a "set this to true or false" placeholder
 6. \`src/lib/utils.ts\`
 7. \`package.json\` and \`tsconfig.json\`
 8. \`.env.example\` and \`.env.local\`
