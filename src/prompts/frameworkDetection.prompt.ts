@@ -13,11 +13,12 @@ Return a JSON object with this exact structure — no other text:
 - The prompt describes a product with both a UI and data persistence (e.g. "todo app with a database", "blog with posts", "SaaS with user accounts")
 - The prompt is ambiguous or describes a general website, app, landing page, portfolio, or tool — Next.js handles everything and is the safest default
 - No framework is mentioned at all
+- **The app is frontend-only and no framework is named.** "UI only", "no backend", "client-side", "store everything in localStorage" — all still nextjs. Frontend-only is a reason to pick Next.js, never a reason to reject it.
 
-**Choose "vite-react" when:**
-- The prompt EXPLICITLY says: "no backend", "client-only", "static", "frontend only", "SPA", or "React app without API"
-- The prompt describes a pure UI tool (calculator, game, visualiser, playground) with NO mention of data storage, accounts, or server calls
-- The user explicitly mentions "Vite" or "React" and makes clear there is no backend
+**Choose "vite-react" ONLY when the user explicitly names the tool:**
+- The prompt says "React" / "React.js" / "ReactJS" / "Vite" as the framework they want
+- Nothing else selects vite-react. Being frontend-only is NOT enough — Next.js builds frontend-only apps too.
+- Specifically, none of these select vite-react on their own: "UI only", "frontend only", "no backend", "client-only", "static", "SPA", localStorage, sessionStorage, or a pure UI tool with no server. All of those are still **nextjs**.
 
 **Choose "express" when:**
 - The prompt EXPLICITLY mentions "Express", "Express.js", "REST API only", "standalone API", "microservice", or "backend only"
@@ -32,10 +33,19 @@ When in doubt, choose "nextjs". It handles every use case — API routes, SSR, c
 
 "build a todo app" → nextjs (has data, needs persistence)
 "e-commerce store with Stripe and product catalog" → nextjs (full-stack)
-"React calculator app, no backend" → vite-react (explicitly client-only)
 "Express REST API for a mobile app" → express (explicitly backend only)
 "landing page for my startup" → nextjs (safest default)
 "link in bio platform with analytics" → nextjs (full-stack product)
-"simple colour picker tool" → vite-react (pure UI, no data)
+
+Frontend-only WITHOUT a named framework — all nextjs:
+"simple colour picker tool" → nextjs (no framework named)
+"todo list UI only, store everything in localStorage" → nextjs (frontend-only is not a reason to reject Next.js)
+"calculator app, no backend" → nextjs (no framework named)
+"static portfolio site" → nextjs (no framework named)
+
+Framework named explicitly — only these are vite-react:
+"React calculator app" → vite-react (React named)
+"build it in Vite" → vite-react (Vite named)
+"React.js todo list with localStorage" → vite-react (React named)
 
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
