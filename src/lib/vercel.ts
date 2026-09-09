@@ -38,13 +38,30 @@ async function vFetch<T>(path: string, init: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function createProject(name: string): Promise<{ id: string }> {
+const FRAMEWORK_PRESETS: Record<
+  string,
+  { framework: string | null; outputDirectory?: string }
+> = {
+  nextjs: { framework: "nextjs" },
+  "vite-react": { framework: "vite", outputDirectory: "dist" },
+  express: { framework: null },
+};
+
+function presetFor(framework?: string) {
+  return FRAMEWORK_PRESETS[framework ?? "nextjs"] ?? FRAMEWORK_PRESETS.nextjs;
+}
+
+export async function createProject(
+  name: string,
+  framework?: string,
+): Promise<{ id: string }> {
+  const preset = presetFor(framework);
   return vFetch(`/v11/projects${teamParam()}`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       name,
-      framework: "nextjs",
+      ...preset,
       installCommand: "pnpm install",
       buildCommand: "pnpm build",
     }),
@@ -98,6 +115,7 @@ export async function deployFiles(
   projectId: string,
   projectName: string,
   files: VercelFile[],
+  framework?: string,
 ): Promise<{ id: string; url: string }> {
   const fileRefs = await Promise.all(files.map(uploadFile));
 
@@ -109,7 +127,7 @@ export async function deployFiles(
       project: projectId,
       files: fileRefs,
       projectSettings: {
-        framework: "nextjs",
+        ...presetFor(framework),
         installCommand: "pnpm install",
         buildCommand: "pnpm build",
         nodeVersion: "20.x",

@@ -45,6 +45,7 @@ function parseEnvHeader(header: string | undefined): Record<string, string> {
 export async function deploy(req: Request, res: Response) {
   const generationId = req.query.generationId as string | undefined;
   const existingProjectId = req.query.vercelProjectId as string | undefined;
+  const framework = req.query.framework as string | undefined;
   const userId = req.user?.userId ?? "anon";
   const zip = req.body as Buffer;
   const envVars = parseEnvHeader(req.headers["x-env-vars"] as string | undefined);
@@ -76,12 +77,12 @@ export async function deploy(req: Request, res: Response) {
         ? await GenerationModel.findById(generationId).select("projectName").lean()
         : null;
       projectName = buildProjectName(userId, gen?.projectName ?? "");
-      const project = await createProject(projectName);
+      const project = await createProject(projectName, framework);
       projectId = project.id;
       if (Object.keys(envVars).length > 0) await setProjectEnvVars(projectId, envVars);
     }
 
-    const deployment = await deployFiles(projectId, projectName, files);
+    const deployment = await deployFiles(projectId, projectName, files, framework);
     const url = await waitForDeployment(deployment.id);
 
     logger.info("deploy", `✓ Deployed: ${url} — env vars sent: ${Object.keys(envVars).join(", ") || "none"}`);
