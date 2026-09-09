@@ -1,7 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 import { getAnthropicClient } from "../utils/anthropic.util";
-import { GENERATION_MODEL, GENERATION_MAX_TOKENS } from "../config/generation.constants";
+import {
+  GENERATION_MODEL,
+  GENERATION_MAX_TOKENS,
+  GENERATION_THINKING,
+  GENERATION_EFFORT,
+} from "../config/generation.constants";
 import { getNextJsPrompt } from "../prompts/generation/nextjs.prompt";
 import { getViteReactPrompt } from "../prompts/generation/vite-react.prompt";
 import { getExpressPrompt } from "../prompts/generation/express.prompt";
@@ -42,6 +47,10 @@ export async function generate(req: Request, res: Response, _next: NextFunction)
     const stream = client.messages.stream({
       model: GENERATION_MODEL,
       max_tokens: GENERATION_MAX_TOKENS,
+      thinking: GENERATION_THINKING
+        ? { type: "adaptive", display: "summarized" }
+        : { type: "disabled" },
+      output_config: { effort: GENERATION_EFFORT },
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: prompt }],
     });

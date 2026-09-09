@@ -4,6 +4,8 @@ import { getAnthropicClient } from "../utils/anthropic.util";
 import {
   GENERATION_MODEL,
   GENERATION_MAX_TOKENS,
+  GENERATION_THINKING,
+  GENERATION_EFFORT,
 } from "../config/generation.constants";
 import { getRepromptPrompt } from "../prompts/reprompt.prompt";
 import { GenerationModel as Generation } from "@zyraalabs/zyraa-db";
@@ -50,6 +52,10 @@ export async function reprompt(req: Request, res: Response) {
     const stream = client.messages.stream({
       model: GENERATION_MODEL,
       max_tokens: GENERATION_MAX_TOKENS,
+      thinking: GENERATION_THINKING
+        ? { type: "adaptive", display: "summarized" }
+        : { type: "disabled" },
+      output_config: { effort: GENERATION_EFFORT },
       system: [
         {
           type: "text",
