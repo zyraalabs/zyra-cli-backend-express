@@ -65,7 +65,7 @@ export async function setProjectEnvVars(
     target: ["production", "preview", "development"],
   }));
 
-  await vFetch(`/v10/projects/${projectId}/env${teamParam()}`, {
+  await vFetch(`/v10/projects/${projectId}/env?upsert=true${teamParam("&")}`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
