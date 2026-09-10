@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient } from "../utils/anthropic.util";
 import { REPROMPT_SELECT_MODEL } from "../config/generation.constants";
 import { getRepromptSelectPrompt } from "../prompts/reprompt.prompt";
@@ -26,23 +27,25 @@ export async function repromptSelect(req: Request, res: Response) {
       ],
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
+    const text = message.content
+      .filter((block): block is Anthropic.TextBlock => block.type === "text")
+      .map((block) => block.text)
+      .join("")
+      .trim();
+
+    if (!text) {
+      logger.warn("repromptSelect", "No text block in model response");
       return ErrorResponse(res, "Invalid response from model", 500);
     }
 
     let filePaths: string[];
     try {
-      const text = content.text.trim();
       // Extract JSON array even if model wraps it in markdown
       const match = text.match(/\[[\s\S]*\]/);
       filePaths = JSON.parse(match ? match[0] : text);
       if (!Array.isArray(filePaths)) throw new Error("Not an array");
     } catch {
-      logger.warn(
-        "repromptSelect",
-        `Failed to parse file list: ${content.text}`,
-      );
+      logger.warn("repromptSelect", `Failed to parse file list: ${text}`);
       return ErrorResponse(res, "Could not parse file selection", 500);
     }
 
