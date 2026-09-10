@@ -77,27 +77,52 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
     name: "ask_user",
     description:
-      "Ask the user for values you cannot determine yourself, such as API keys or secrets. Use sparingly — never ask for anything you can read from the project.",
+      "Ask the user a question and wait for their answer. Use it for a decision only they can make — a product choice with no obviously right answer, or a secret you cannot read from the project. Do not use it for anything discoverable with list_dir or read_file, and never to confirm work you should simply do. Ask one question at a time, as early as possible, and keep building afterwards.",
     input_schema: {
       type: "object",
       properties: {
-        question: { type: "string", description: "What you need, in one sentence." },
-        fields: {
+        question: {
+          type: "string",
+          description: "The question, in one plain sentence.",
+        },
+        kind: {
+          type: "string",
+          enum: ["choice", "secret"],
+          description:
+            "\"choice\" for a product decision, which shows the options as a picker. \"secret\" for API keys and credentials, which are written to the env file.",
+        },
+        options: {
           type: "array",
-          description: "The values being requested.",
+          description:
+            "For kind \"choice\": two to four options. Include the one you would pick first.",
           items: {
             type: "object",
             properties: {
-              name: { type: "string" },
+              label: { type: "string", description: "Two or three words." },
+              description: {
+                type: "string",
+                description: "One line on what this choice means.",
+              },
+            },
+            required: ["label"],
+            additionalProperties: false,
+          },
+        },
+        fields: {
+          type: "array",
+          description: "For kind \"secret\": the environment variables needed.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "The variable name, e.g. STRIPE_SECRET_KEY." },
               description: { type: "string" },
-              secret: { type: "boolean" },
             },
             required: ["name"],
             additionalProperties: false,
           },
         },
       },
-      required: ["question", "fields"],
+      required: ["question", "kind"],
       additionalProperties: false,
     },
   },

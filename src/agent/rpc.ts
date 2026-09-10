@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { AgentSocket, ToolName, ToolResultMessage } from "./protocol";
 
 export const TOOL_TIMEOUT_MS = Number(process.env.AGENT_TOOL_TIMEOUT_MS ?? 180_000);
+export const ASK_TIMEOUT_MS = Number(process.env.AGENT_ASK_TIMEOUT_MS ?? 20 * 60_000);
 
 export class SessionClosedError extends Error {}
 
@@ -45,6 +46,7 @@ export class ToolBridge {
     }
 
     const id = randomUUID();
+    const timeout = tool === "ask_user" ? ASK_TIMEOUT_MS : TOOL_TIMEOUT_MS;
 
     return new Promise<ToolResultMessage>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -53,9 +55,9 @@ export class ToolBridge {
           type: "tool_result",
           id,
           ok: false,
-          result: `Tool "${tool}" timed out after ${TOOL_TIMEOUT_MS}ms.`,
+          result: `Tool "${tool}" timed out after ${timeout}ms.`,
         });
-      }, TOOL_TIMEOUT_MS);
+      }, timeout);
 
       this.pending.set(id, { resolve, reject, timer });
       this.socket.send({ type: "tool_call", id, tool, input });

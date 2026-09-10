@@ -50,6 +50,7 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
 
   const startedAt = Date.now();
   const touched = new Set<string>();
+  let waitingOnUserMs = 0;
   let inputTokens = 0;
   let outputTokens = 0;
   let toolCalls = 0;
@@ -61,7 +62,9 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
 
   while (true) {
     if (bridge.closed) return finish("disconnected");
-    if (Date.now() - startedAt > MAX_WALL_CLOCK_MS) return finish("time_limit");
+    if (Date.now() - startedAt - waitingOnUserMs > MAX_WALL_CLOCK_MS) {
+      return finish("time_limit");
+    }
     if (toolCalls >= MAX_TOOL_CALLS) return finish("tool_call_limit");
     if (consecutiveToolFailures(messages) >= MAX_CONSECUTIVE_FAILURES) {
       return finish("failure_spin");
@@ -125,6 +128,8 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
         });
         onTrace?.({ type: "tool_call", tool: request.name, input: request.input });
 
+        const askedAt = request.name === "ask_user" ? Date.now() : 0;
+
         try {
           const outcome = await executeTool(
             request.name,
@@ -132,6 +137,7 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
             bridge,
             toolchain,
           );
+          if (askedAt) waitingOnUserMs += Date.now() - askedAt;
           socket.send({
             type: "progress",
             event: "tool_end",
@@ -254,7 +260,11 @@ function describe(request: Anthropic.Beta.BetaToolUseBlock, seen: Set<string>): 
       return { kind: "running", target: cmd, detail: `running ${cmd}` };
     }
     case "ask_user":
-      return { kind: "asking", target: "", detail: "waiting for your input" };
+      return {
+        kind: "asking",
+        target: typeof input.question === "string" ? input.question : "",
+        detail: "waiting for your answer",
+      };
     default:
       return { kind: "running", target: "", detail: request.name };
   }
