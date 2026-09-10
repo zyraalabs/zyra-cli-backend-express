@@ -5,11 +5,14 @@ import mongoose from "mongoose";
 import { app } from "../src/app";
 import { connectToDatabase } from "../src/db/db";
 import { logger } from "../src/utils/logger";
+import { attachAgentServer } from "../src/agent/server";
 
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 const server = stoppable(createServer(app), 10_000);
+
+attachAgentServer(server);
 
 connectToDatabase()
   .then(() => {
