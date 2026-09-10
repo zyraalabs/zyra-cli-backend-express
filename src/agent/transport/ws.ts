@@ -4,6 +4,7 @@ import { AgentSocket, ClientToServer, ServerToClient } from "../protocol";
 export function wsAgentSocket(ws: WebSocket): AgentSocket {
   const messageHandlers: ((msg: ClientToServer) => void)[] = [];
   const closeHandlers: ((reason: string) => void)[] = [];
+  const buffered: ClientToServer[] = [];
   let closed = false;
 
   const fireClose = (reason: string) => {
@@ -19,6 +20,10 @@ export function wsAgentSocket(ws: WebSocket): AgentSocket {
     } catch {
       return;
     }
+    if (!messageHandlers.length) {
+      buffered.push(parsed);
+      return;
+    }
     for (const handler of messageHandlers) handler(parsed);
   });
 
@@ -31,7 +36,11 @@ export function wsAgentSocket(ws: WebSocket): AgentSocket {
       ws.send(JSON.stringify(msg));
     },
     onMessage(handler) {
+      const first = messageHandlers.length === 0;
       messageHandlers.push(handler);
+      if (!first || !buffered.length) return;
+      const pending = buffered.splice(0, buffered.length);
+      for (const msg of pending) handler(msg);
     },
     onClose(handler) {
       closeHandlers.push(handler);

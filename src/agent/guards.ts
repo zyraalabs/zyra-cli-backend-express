@@ -10,8 +10,8 @@ export const MAX_WALL_CLOCK_MS = Number(
 
 const CANCELLED_RESULT = "Tool call was cancelled before it completed.";
 
-type Param = Anthropic.MessageParam;
-type Block = Anthropic.ContentBlockParam;
+type Param = Anthropic.Beta.BetaMessageParam;
+type Block = Anthropic.Beta.BetaContentBlockParam;
 
 function blocksOf(message: Param): Block[] {
   return Array.isArray(message.content) ? (message.content as Block[]) : [];
@@ -38,7 +38,7 @@ export function pairToolBlocks(messages: Param[]): Param[] {
     }
 
     const calls = blocksOf(message).filter(
-      (b): b is Anthropic.ToolUseBlockParam => b.type === "tool_use",
+      (b): b is Anthropic.Beta.BetaToolUseBlockParam => b.type === "tool_use",
     );
     repaired.push(message);
     if (!calls.length) continue;
@@ -97,7 +97,7 @@ export function consecutiveToolFailures(messages: Param[]): number {
 
     if (message.role === "user") {
       const results = blocks.filter(
-        (b): b is Anthropic.ToolResultBlockParam => b.type === "tool_result",
+        (b): b is Anthropic.Beta.BetaToolResultBlockParam => b.type === "tool_result",
       );
       if (!results.length) break;
       if (results.some((r) => r.is_error !== true)) break;

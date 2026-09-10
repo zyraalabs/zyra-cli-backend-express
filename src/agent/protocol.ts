@@ -20,10 +20,22 @@ export interface ToolResultMessage {
   result: string;
 }
 
+export type ActionKind =
+  | "creating"
+  | "editing"
+  | "reading"
+  | "exploring"
+  | "running"
+  | "asking";
+
 export interface ProgressMessage {
   type: "progress";
   event: "text" | "tool_start" | "tool_end" | "thinking";
   detail: string;
+  kind?: ActionKind;
+  target?: string;
+  note?: string;
+  ok?: boolean;
 }
 
 export interface DoneMessage {

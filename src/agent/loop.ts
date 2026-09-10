@@ -7,7 +7,7 @@ import {
   consecutiveToolFailures,
   pairToolBlocks,
 } from "./guards";
-import { AgentSocket } from "./protocol";
+import { ActionKind, AgentSocket } from "./protocol";
 import { ToolBridge, SessionClosedError } from "./rpc";
 import { TOOL_DEFINITIONS, executeTool } from "./tools";
 import {
@@ -44,11 +44,12 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
   const { client, socket, bridge, systemPrompt, userPrompt, toolchain, onTrace } =
     options;
 
-  const messages: Anthropic.MessageParam[] = [
+  const messages: Anthropic.Beta.BetaMessageParam[] = [
     { role: "user", content: userPrompt },
   ];
 
   const startedAt = Date.now();
+  const touched = new Set<string>();
   let inputTokens = 0;
   let outputTokens = 0;
   let toolCalls = 0;
@@ -73,13 +74,19 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
       onTrace?.({ type: "repaired_tool_pairing" });
     }
 
-    const stream = client.messages.stream({
+    const stream = client.beta.messages.stream({
       model: AGENT_MODEL,
       max_tokens: AGENT_MAX_TOKENS,
+      betas: ["context-management-2025-06-27"],
+      context_management: { edits: [{ type: "clear_tool_uses_20250919" }] },
       thinking: { type: "adaptive", display: "summarized" },
       output_config: { effort: AGENT_EFFORT },
       system: [
-        { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+        {
+          type: "text",
+          text: systemPrompt,
+          cache_control: { type: "ephemeral", ttl: "1h" },
+        },
       ],
       tools: TOOL_DEFINITIONS,
       messages,
@@ -87,6 +94,10 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
 
     stream.on("text", (text) => {
       socket.send({ type: "progress", event: "text", detail: text });
+    });
+
+    stream.on("thinking", (delta) => {
+      socket.send({ type: "progress", event: "thinking", detail: delta });
     });
 
     const response = await stream.finalMessage();
@@ -97,16 +108,20 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
     if (response.stop_reason !== "tool_use") return finish("completed");
 
     const requests = response.content.filter(
-      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
+      (block): block is Anthropic.Beta.BetaToolUseBlock => block.type === "tool_use",
     );
 
     const results = await Promise.all(
       requests.map(async (request) => {
         toolCalls++;
+        const action = describe(request, touched);
         socket.send({
           type: "progress",
           event: "tool_start",
-          detail: describe(request),
+          detail: action.detail,
+          kind: action.kind,
+          target: action.target,
+          note: action.note,
         });
         onTrace?.({ type: "tool_call", tool: request.name, input: request.input });
 
@@ -120,7 +135,11 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
           socket.send({
             type: "progress",
             event: "tool_end",
-            detail: outcome.isError ? `failed: ${request.name}` : `ok: ${request.name}`,
+            detail: outcome.isError ? firstRealError(outcome.content) : action.detail,
+            kind: action.kind,
+            target: action.target,
+            note: action.note,
+            ok: !outcome.isError,
           });
           onTrace?.({ type: "tool_result", tool: request.name, ok: !outcome.isError });
           return {
@@ -132,6 +151,14 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
         } catch (error) {
           if (error instanceof SessionClosedError) throw error;
           const message = error instanceof Error ? error.message : "tool failed";
+          socket.send({
+            type: "progress",
+            event: "tool_end",
+            detail: message.slice(0, 200),
+            kind: action.kind,
+            target: action.target,
+            ok: false,
+          });
           onTrace?.({ type: "tool_result", tool: request.name, ok: false });
           return {
             type: "tool_result" as const,
@@ -152,13 +179,83 @@ export async function runAgentLoop(options: LoopOptions): Promise<LoopResult> {
   }
 }
 
-function describe(request: Anthropic.ToolUseBlock): string {
+interface Action {
+  kind: ActionKind;
+  target: string;
+  detail: string;
+  note?: string;
+}
+
+const ERROR_PATTERNS = [
+  /^.*error TS\d+:.*$/m,
+  /^Type error:.*$/m,
+  /^.*Module not found:.*$/m,
+  /^.*Cannot find (?:module|name).*$/m,
+  /^.*SyntaxError:.*$/m,
+  /^.*ERR_[A-Z_]+.*$/m,
+  /^\s*✕.*$/m,
+  /^.*[Ee]rror:.*$/m,
+];
+
+export function firstRealError(output: string): string {
+  for (const pattern of ERROR_PATTERNS) {
+    const match = output.match(pattern);
+    if (match) return match[0].trim().slice(0, 240);
+  }
+  const lines = output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return (lines[lines.length - 1] ?? "failed").slice(0, 240);
+}
+
+function lineCount(value: unknown): number {
+  return typeof value === "string" ? value.split("\n").length : 0;
+}
+
+function describe(request: Anthropic.Beta.BetaToolUseBlock, seen: Set<string>): Action {
   const input = request.input as Record<string, unknown>;
-  if (request.name === "run_command" && typeof input.cmd === "string") {
-    return `running ${input.cmd}`;
+  const path = typeof input.path === "string" ? input.path : "";
+
+  switch (request.name) {
+    case "write_file": {
+      const known = seen.has(path);
+      seen.add(path);
+      const lines = lineCount(input.content);
+      return {
+        kind: known ? "editing" : "creating",
+        target: path,
+        detail: `${known ? "rewriting" : "creating"} ${path}`,
+        note: lines ? `${lines} lines` : undefined,
+      };
+    }
+    case "edit_file": {
+      seen.add(path);
+      const removed = lineCount(input.old_string);
+      const added = lineCount(input.new_string);
+      return {
+        kind: "editing",
+        target: path,
+        detail: `editing ${path}`,
+        note: `+${added} -${removed}`,
+      };
+    }
+    case "read_file":
+      seen.add(path);
+      return { kind: "reading", target: path, detail: `reading ${path}` };
+    case "list_dir":
+      return {
+        kind: "exploring",
+        target: path || ".",
+        detail: `exploring ${path || "."}`,
+      };
+    case "run_command": {
+      const cmd = typeof input.cmd === "string" ? input.cmd : "";
+      return { kind: "running", target: cmd, detail: `running ${cmd}` };
+    }
+    case "ask_user":
+      return { kind: "asking", target: "", detail: "waiting for your input" };
+    default:
+      return { kind: "running", target: "", detail: request.name };
   }
-  if (typeof input.path === "string") {
-    return `${request.name.replace("_", " ")} ${input.path}`;
-  }
-  return request.name;
 }
