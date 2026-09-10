@@ -38,7 +38,20 @@ export function wsAgentSocket(ws: WebSocket): AgentSocket {
       if (closed) handler("client disconnected");
     },
     close() {
-      if (ws.readyState === WebSocket.OPEN) ws.close();
+      if (ws.readyState !== WebSocket.OPEN) return;
+      if (ws.bufferedAmount === 0) {
+        ws.close();
+        return;
+      }
+      const stop = () => {
+        clearInterval(drain);
+        clearTimeout(giveUp);
+        if (ws.readyState === WebSocket.OPEN) ws.close();
+      };
+      const drain = setInterval(() => {
+        if (ws.readyState !== WebSocket.OPEN || ws.bufferedAmount === 0) stop();
+      }, 50).unref();
+      const giveUp = setTimeout(stop, 5_000).unref();
     },
   };
 }
